@@ -14,12 +14,26 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "smart-theme-switcher.helloWorld",
-        "title": "Hello World"
+    "configuration": {
+      "title": "Smart Theme Switcher",
+      "properties": {
+        "smartTheme.morningTheme": {
+          "type": "string",
+          "default": "Default Light+",
+          "description": "Theme used in the morning (6am - 12pm)"
+        },
+        "smartTheme.afternoonTheme": {
+          "type": "string",
+          "default": "Default Dark+",
+          "description": "Theme used in the afternoon (12pm - 6pm)"
+        },
+        "smartTheme.nightTheme": {
+          "type": "string",
+          "default": "Abyss",
+          "description": "Theme used at night (6pm - 6am)"
+        }
       }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
