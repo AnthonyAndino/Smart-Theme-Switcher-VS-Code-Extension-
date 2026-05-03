@@ -18,15 +18,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     async function applyTheme() {
 		const config = vscode.workspace.getConfiguration();
-		const currentTheme = config.get<string>("workbench.coloTheme");
-
+		const currentTheme = config.get<string>("workbench.colorTheme") || "";
 		const newTheme = getThemeByHour();
 
 		console.log("Tema actual:", currentTheme);
 		console.log("Tema esperado:", newTheme);
 
 		if (currentTheme === newTheme) {
-			console.log("Tema ya aplicado, no se hace nada");
+			console.log("Sin cambios necesarios");
 			return;
 		}
 
@@ -46,6 +45,17 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Ejecutar al iniciar
     applyTheme();
+
+	//intervarlo inteligente (cada 5 minutos)
+	const interval = setInterval(() => {
+		console.log("Revisando cambio de tema");
+		applyTheme();
+	}, 5 * 60 * 1000);
+
+	//limpieza al desactivar
+	context.subscriptions.push({
+		dispose: () => clearInterval(interval)
+	});
 }
 
 export function deactivate() {}
