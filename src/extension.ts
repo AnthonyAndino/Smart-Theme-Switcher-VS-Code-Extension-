@@ -45,6 +45,14 @@ export function activate(context: vscode.ExtensionContext) {
 			);
 
 			console.log("Tema actualizado correctamente");
+
+			//notificacion
+			const settings = vscode.workspace.getConfiguration("smartTheme");
+			const showNotification = settings.get<boolean>("enableNotification") ?? true;
+
+			if (showNotification) {
+				vscode.window.showInformationMessage(`Theme changed to ${newTheme}`);
+			}
 		
 		} catch (error) {
 			console.log("Error aplicando tema:", error);

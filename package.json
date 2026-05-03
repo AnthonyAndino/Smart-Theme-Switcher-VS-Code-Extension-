@@ -31,6 +31,11 @@
           "type": "string",
           "default": "Abyss",
           "description": "Theme used at night (6pm - 6am)"
+        },
+        "smartTheme.enableNotification": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notification when theme changes"
         }
       }
     },
