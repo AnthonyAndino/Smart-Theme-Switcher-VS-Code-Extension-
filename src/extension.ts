@@ -7,8 +7,6 @@ export function activate(context: vscode.ExtensionContext) {
     function getThemeByHour(): string {
         const hour = new Date().getHours();
 
-        console.log("Hora actual:", hour);
-
         if (hour >= 6 && hour < 12) {
             return 'Default Light+';
         } else if (hour >= 12 && hour < 18) {
@@ -19,31 +17,35 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     async function applyTheme() {
-        const theme = getThemeByHour();
+		const config = vscode.workspace.getConfiguration();
+		const currentTheme = config.get<string>("workbench.coloTheme");
 
-        console.log("Tema seleccionado:", theme);
+		const newTheme = getThemeByHour();
 
-        try {
-            await vscode.workspace.getConfiguration().update(
-                "workbench.colorTheme",
-                theme,
-                vscode.ConfigurationTarget.Global
-            );
+		console.log("Tema actual:", currentTheme);
+		console.log("Tema esperado:", newTheme);
 
-            console.log("Tema aplicado correctamente ✅");
+		if (currentTheme === newTheme) {
+			console.log("Tema ya aplicado, no se hace nada");
+			return;
+		}
 
-        } catch (error) {
-            console.error("Error aplicando tema:", error);
-        }
-    }
+		try {
+			await config.update(
+				"workbench.colorTheme",
+				newTheme,
+				vscode.ConfigurationTarget.Global
+			);
+
+			console.log("Tema actualizado correctamente");
+		
+		} catch (error) {
+			console.log("Error aplicando tema:", error);
+		}
+	}
 
     // Ejecutar al iniciar
     applyTheme();
-
-    // Opcional: re-evaluar cada 5 minutos
-    setInterval(() => {
-        applyTheme();
-    }, 5 * 60 * 1000);
 }
 
 export function deactivate() {}
