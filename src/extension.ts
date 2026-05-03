@@ -5,14 +5,20 @@ export function activate(context: vscode.ExtensionContext) {
     console.log("Smart Theme Switcher ACTIVADO");
 
     function getThemeByHour(): string {
+		const config = vscode.workspace.getConfiguration("smartTheme");
+
+		const morning = config.get<string>("morningTheme") || "Default Light+";
+		const afternoon = config.get<string>('afternoonTheme') || "Default Dark+";
+		const night = config.get<string>("nightTheme") || "Abyss";
+
         const hour = new Date().getHours();
 
         if (hour >= 6 && hour < 12) {
-            return 'Default Light+';
+            return morning;
         } else if (hour >= 12 && hour < 18) {
-            return 'Default Dark+';
+            return afternoon;
         } else {
-            return 'Abyss';
+            return night;
         }
     }
 
