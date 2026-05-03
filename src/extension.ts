@@ -4,6 +4,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     console.log("Smart Theme Switcher ACTIVADO");
 
+	let autoEnabled = true;
+
     function getThemeByHour(): string {
 		const config = vscode.workspace.getConfiguration("smartTheme");
 
@@ -50,18 +52,45 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
     // Ejecutar al iniciar
-    applyTheme();
+    if (autoEnabled) {
+		applyTheme();
+	}
 
 	//intervarlo inteligente (cada 5 minutos)
 	const interval = setInterval(() => {
+		if (!autoEnabled) return;
+
 		console.log("Revisando cambio de tema");
 		applyTheme();
-	}, 5 * 60 * 1000);
+	}, 10 * 1000);
 
 	//limpieza al desactivar
 	context.subscriptions.push({
 		dispose: () => clearInterval(interval)
 	});
+
+	//comando: cambiar tema manualmente
+	const changeNowCommand = vscode.commands.registerCommand(
+		"smartTheme.changeNow",
+		async () => {
+			console.log("Cambio manual ejecutado");
+			await applyTheme();
+		}
+	);
+
+	//comando: activar / desactivar automatico
+	const toggleAutoCommand = vscode.commands.registerCommand(
+		"smartTheme.toggleAuto",
+		() => {
+			autoEnabled = !autoEnabled;
+
+			vscode.window.showInformationMessage(
+				`Auto Theme ${autoEnabled ? "Enabled" : "Disabled"}`
+			);
+		}
+	);
+
+	context.subscriptions.push(changeNowCommand, toggleAutoCommand);
 }
 
 export function deactivate() {}

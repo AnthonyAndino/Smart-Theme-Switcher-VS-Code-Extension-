@@ -33,7 +33,17 @@
           "description": "Theme used at night (6pm - 6am)"
         }
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "smartTheme.changeNow",
+        "title": "Smart Theme: Changed Theme Now"
+      },
+      {
+        "command": "smartTheme.toggleAuto",
+        "title": "Smart Theme: Enable/Disable Auto Theme"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
