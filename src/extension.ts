@@ -1,26 +1,49 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "smart-theme-switcher" is now active!');
+    console.log("Smart Theme Switcher ACTIVADO");
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('smart-theme-switcher.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from smart-theme-switcher!');
-	});
+    function getThemeByHour(): string {
+        const hour = new Date().getHours();
 
-	context.subscriptions.push(disposable);
+        console.log("Hora actual:", hour);
+
+        if (hour >= 6 && hour < 12) {
+            return 'Default Light+';
+        } else if (hour >= 12 && hour < 18) {
+            return 'Default Dark+';
+        } else {
+            return 'Abyss';
+        }
+    }
+
+    async function applyTheme() {
+        const theme = getThemeByHour();
+
+        console.log("Tema seleccionado:", theme);
+
+        try {
+            await vscode.workspace.getConfiguration().update(
+                "workbench.colorTheme",
+                theme,
+                vscode.ConfigurationTarget.Global
+            );
+
+            console.log("Tema aplicado correctamente ✅");
+
+        } catch (error) {
+            console.error("Error aplicando tema:", error);
+        }
+    }
+
+    // Ejecutar al iniciar
+    applyTheme();
+
+    // Opcional: re-evaluar cada 5 minutos
+    setInterval(() => {
+        applyTheme();
+    }, 5 * 60 * 1000);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
