@@ -4,7 +4,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     console.log("Smart Theme Switcher ACTIVADO");
 
-	let autoEnabled = true;
+	const settings = vscode.workspace.getConfiguration("smartTheme");
+
+	let autoEnabled = context.globalState.get<boolean>("autoEnabled", true);
 
     function getThemeByHour(): string {
 		const config = vscode.workspace.getConfiguration("smartTheme");
@@ -25,6 +27,14 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     async function applyTheme() {
+
+		//validar si esta desactivado desde settings
+		const enabledFromSettings = settings.get<boolean>("enabled") ?? true;
+		if (!enabledFromSettings || !autoEnabled) {
+			console.log("Extension desactivada");
+			return;
+		}
+
 		const config = vscode.workspace.getConfiguration();
 		const currentTheme = config.get<string>("workbench.colorTheme") || "";
 		const newTheme = getThemeByHour();
@@ -47,7 +57,6 @@ export function activate(context: vscode.ExtensionContext) {
 			console.log("Tema actualizado correctamente");
 
 			//notificacion
-			const settings = vscode.workspace.getConfiguration("smartTheme");
 			const showNotification = settings.get<boolean>("enableNotification") ?? true;
 
 			if (showNotification) {
@@ -59,23 +68,23 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-    // Ejecutar al iniciar
-    if (autoEnabled) {
-		applyTheme();
+    // Ejecutar solo si esta habilitado
+    if (settings.get<boolean>("enabled")) {
+        applyTheme();
+    }
+
+	//intervarlo solo si esta activo
+	let interval: NodeJS.Timeout | undefined;
+
+	if (autoEnabled) {
+		interval = setInterval(() => {
+			applyTheme();
+		}, 5 * 60 * 1000);
+
+		context.subscriptions.push({
+			dispose: () => interval && clearInterval(interval)
+		});
 	}
-
-	//intervarlo inteligente (cada 5 minutos)
-	const interval = setInterval(() => {
-		if (!autoEnabled) return;
-
-		console.log("Revisando cambio de tema");
-		applyTheme();
-	}, 10 * 1000);
-
-	//limpieza al desactivar
-	context.subscriptions.push({
-		dispose: () => clearInterval(interval)
-	});
 
 	//comando: cambiar tema manualmente
 	const changeNowCommand = vscode.commands.registerCommand(
@@ -86,15 +95,19 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 
-	//comando: activar / desactivar automatico
+	//comando toggle persistente
 	const toggleAutoCommand = vscode.commands.registerCommand(
 		"smartTheme.toggleAuto",
-		() => {
+		async () => {
 			autoEnabled = !autoEnabled;
+
+			await context.globalState.update("autoEnabled", autoEnabled);
 
 			vscode.window.showInformationMessage(
 				`Auto Theme ${autoEnabled ? "Enabled" : "Disabled"}`
 			);
+
+			console.log("AutoTheme:", autoEnabled);
 		}
 	);
 
