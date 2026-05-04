@@ -77,6 +77,11 @@
           "default": 1,
           "description": "How many units between theme changes (e.g. 2 hours, 3 days)"
         },
+        "smartTheme.languageThemes": {
+          "type": "object",
+          "default": {},
+          "description": "Map of VS Code language IDs to their assigned themes"
+        },
         "smartTheme.workspaceThemes": {
           "type": "object",
           "default": {},
@@ -112,6 +117,14 @@
       {
         "command": "smartTheme.listThemes",
         "title": "Smart Theme: List All Themes"
+      },
+      {
+        "command": "smartTheme.setLanguageTheme",
+        "title": "Smart Theme: Set Language Theme"
+      },
+      {
+        "command": "smartTheme.manageLanguageThemes",
+        "title": "Smart Theme: Manage Language Themes"
       }
     ]
   },

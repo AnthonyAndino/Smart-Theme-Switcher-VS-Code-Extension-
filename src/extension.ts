@@ -120,7 +120,28 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	async function setThemeDirect(name: string) {
+	function getLanguageTheme(): string | null {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) return null;
+
+		const langId = editor.document.languageId;
+		const s = getSettings();
+		const map = s.get<Record<string, string>>("languageThemes") || {};
+
+		return map[langId] || null;
+	}
+
+	async function onLanguageChange(): Promise<void> {
+		const modes = getEnabledModes();
+		if (!modes.includes("language")) return;
+
+		const theme = getLanguageTheme();
+		if (theme) {
+			await setThemeDirect(theme, true);
+		}
+	}
+
+	async function setThemeDirect(name: string, silent = false) {
 		const config = vscode.workspace.getConfiguration();
 		const current = config.get<string>("workbench.colorTheme") || "";
 
@@ -129,7 +150,7 @@ export function activate(context: vscode.ExtensionContext) {
 		for (const candidate of candidates) {
 			if (candidate === current) {
 				const s = getSettings();
-				if (s.get<boolean>("enableNotification") ?? true) {
+				if (!silent && (s.get<boolean>("enableNotification") ?? true)) {
 					vscode.window.showInformationMessage(`Theme is already: ${name}`);
 				}
 				return;
@@ -140,7 +161,7 @@ export function activate(context: vscode.ExtensionContext) {
 		await config.update("workbench.colorTheme", target, vscode.ConfigurationTarget.Global);
 
 		const s = getSettings();
-		if (s.get<boolean>("enableNotification") ?? true) {
+		if (!silent && (s.get<boolean>("enableNotification") ?? true)) {
 			vscode.window.showInformationMessage(`Theme changed to ${name}`);
 		}
 	}
@@ -215,12 +236,22 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 		}
+
+		if (modes.includes("language")) {
+			const langTheme = getLanguageTheme();
+			if (langTheme) {
+				await setThemeDirect(langTheme);
+				return;
+			}
+		}
 	}
 
 	applyTheme();
 	restartAutoInterval();
 
 	vscode.workspace.onDidChangeWorkspaceFolders(() => applyTheme());
+
+	vscode.window.onDidChangeActiveTextEditor(() => onLanguageChange());
 
 	vscode.workspace.onDidChangeConfiguration((e) => {
 		if (e.affectsConfiguration("smartTheme.enabledModes") ||
@@ -275,6 +306,14 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 			}
 
+			if (modes.includes("language")) {
+				const theme = getLanguageTheme();
+				if (theme) {
+					await setThemeDirect(theme);
+					return;
+				}
+			}
+
 			vscode.window.showWarningMessage("No active mode could resolve a theme");
 		})
 	);
@@ -303,6 +342,7 @@ export function activate(context: vscode.ExtensionContext) {
 					{ label: "workspace", description: "Theme per project", detail: "Each project gets its own theme" },
 					{ label: "favorites", description: "Rotate favorite themes", detail: "Manual or automatic rotation" },
 					{ label: "time", description: "Theme by time of day", detail: "Uses sunrise/sunset or fixed hours" },
+					{ label: "language", description: "Theme by file language", detail: "JavaScript=dark, Python=light, etc." },
 				],
 				{
 					placeHolder: "Select modes (you can pick multiple)",
@@ -567,6 +607,130 @@ export function activate(context: vscode.ExtensionContext) {
 				delete map[picked.project];
 				await s.update("workspaceThemes", map, vscode.ConfigurationTarget.Global);
 				vscode.window.showInformationMessage(`Removed "${picked.project}"`);
+			}
+		})
+	);
+
+	// -------------------------------
+	// COMMAND: SET LANGUAGE THEME
+	// -------------------------------
+	context.subscriptions.push(
+		vscode.commands.registerCommand("smartTheme.setLanguageTheme", async () => {
+			const s = getSettings();
+			const map = s.get<Record<string, string>>("languageThemes") || {};
+
+			const editor = vscode.window.activeTextEditor;
+			const currentLang = editor?.document.languageId;
+
+			const langPick = await vscode.window.showInputBox({
+				placeHolder: "Enter language ID (e.g. javascript, python, typescript, html)",
+				value: currentLang || "",
+				prompt: "VS Code language ID to map a theme to"
+			});
+
+			if (!langPick) return;
+
+			const allThemes = await getAllThemes();
+
+			const themePick = await vscode.window.showQuickPick(allThemes, {
+				placeHolder: `Select theme for "${langPick}"`
+			});
+
+			if (!themePick) return;
+
+			map[langPick] = themePick;
+			await s.update("languageThemes", map, vscode.ConfigurationTarget.Global);
+
+			const entries = Object.entries(map);
+			vscode.window.showInformationMessage(`"${langPick}" → ${themePick} (${entries.length} languages mapped)`);
+
+			if (vscode.window.activeTextEditor?.document.languageId === langPick) {
+				await setThemeDirect(themePick);
+			}
+		})
+	);
+
+	// -------------------------------
+	// COMMAND: MANAGE LANGUAGE THEMES
+	// -------------------------------
+	context.subscriptions.push(
+		vscode.commands.registerCommand("smartTheme.manageLanguageThemes", async () => {
+			const s = getSettings();
+			const map = s.get<Record<string, string>>("languageThemes") || {};
+			const entries = Object.entries(map);
+
+			const items: { label: string; description: string; detail: string; lang: string | null }[] = entries.map(([lang, theme]) => ({
+				label: `$(code) ${lang}`,
+				description: theme,
+				detail: "Click to change or remove",
+				lang
+			}));
+
+			if (items.length === 0) {
+				items.push({
+					label: "$(plus) No language themes configured",
+					description: "Click to add one",
+					detail: "",
+					lang: null
+				});
+			}
+
+			const picked = await vscode.window.showQuickPick(items, {
+				placeHolder: "Select a language to manage its theme",
+			});
+
+			if (!picked) return;
+
+			const allThemes = await getAllThemes();
+
+			if (!picked.lang) {
+				const langInput = await vscode.window.showInputBox({
+					placeHolder: "Enter language ID",
+					prompt: "VS Code language ID (javascript, python, typescript, etc.)"
+				});
+
+				if (!langInput) return;
+
+				const themePick = await vscode.window.showQuickPick(allThemes, {
+					placeHolder: `Select theme for "${langInput}"`
+				});
+
+				if (!themePick) return;
+
+				map[langInput] = themePick;
+				await s.update("languageThemes", map, vscode.ConfigurationTarget.Global);
+				vscode.window.showInformationMessage(`"${langInput}" → ${themePick}`);
+				return;
+			}
+
+			const actions = await vscode.window.showQuickPick([
+				{ label: "$(edit) Change theme", action: "change" as const },
+				{ label: "$(trash) Remove language", action: "remove" as const },
+			], {
+				placeHolder: `Manage "${picked.lang}" → ${picked.description}`
+			});
+
+			if (!actions) return;
+
+			if (actions.action === "change") {
+				const newTheme = await vscode.window.showQuickPick(allThemes, {
+					placeHolder: `New theme for "${picked.lang}"`
+				});
+
+				if (!newTheme) return;
+
+				map[picked.lang] = newTheme;
+				await s.update("languageThemes", map, vscode.ConfigurationTarget.Global);
+
+				if (vscode.window.activeTextEditor?.document.languageId === picked.lang) {
+					await setThemeDirect(newTheme);
+				}
+
+				vscode.window.showInformationMessage(`"${picked.lang}" → ${newTheme}`);
+			} else {
+				delete map[picked.lang];
+				await s.update("languageThemes", map, vscode.ConfigurationTarget.Global);
+				vscode.window.showInformationMessage(`Removed "${picked.lang}"`);
 			}
 		})
 	);
