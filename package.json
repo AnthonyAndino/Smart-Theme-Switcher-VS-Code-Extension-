@@ -1,6 +1,6 @@
 {
-  "name": "smart-theme-switcher",
-  "displayName": "smart-theme-switcher",
+  "name": "dynamic-theme-switcher",
+  "displayName": "Dynamic Theme Switcher",
   "description": "Automatically changes VSCode theme based on time",
   "version": "0.0.1",
   "publisher": "AnthonyAndino",
