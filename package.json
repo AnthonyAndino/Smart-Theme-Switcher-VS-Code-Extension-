@@ -36,6 +36,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show notification when theme changes"
+        },
+        "smartTheme.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable Smart Theme Switcher"
         }
       }
     },
