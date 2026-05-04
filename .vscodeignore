@@ -1,0 +1,7 @@
+.vscode/**
+src/**
+.gitignore
+.gitattributes
+tsconfig.json
+eslint.config.mjs
+vsc-extension-quickstart.md
