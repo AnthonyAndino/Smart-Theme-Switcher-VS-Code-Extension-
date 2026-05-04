@@ -204,7 +204,7 @@ Common VS Code language IDs you can use:
 - Language-based theme switching / Cambio de tema por lenguaje
 
 
-<!-- test -->
+
 ---
 
 **Enjoy! / ¡Disfruta!**
