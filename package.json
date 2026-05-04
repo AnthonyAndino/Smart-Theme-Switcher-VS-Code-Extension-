@@ -1,8 +1,9 @@
 {
-  "name": "dynamic-theme-switcher",
-  "displayName": "Dynamic Theme Switcher",
+  "name": "themelab-switcher",
+  "displayName": "ThemeLab Switcher",
+  "icon": "logo.png",
   "description": "Automatically changes VSCode theme based on time",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "AnthonyAndino",
   "repository": {
     "type": "git",
