@@ -41,17 +41,77 @@
           "type": "boolean",
           "default": true,
           "description": "Enable or disable Smart Theme Switcher"
+        },
+        "smartTheme.favorites": {
+          "type": "array",
+          "default": ["Default Dark+", "Default Light+", "Abyss"],
+          "description": "Favorite themes to rotate automatically"
+        },
+        "smartTheme.enabledModes": {
+          "type": "array",
+          "default": ["workspace"],
+          "description": "Active modes: workspace, favorites, time (can combine multiple)"
+        },
+        "smartTheme.favoritesRotation": {
+          "type": "string",
+          "default": "manual",
+          "enum": [
+            "manual",
+            "auto"
+          ],
+          "description": "How favorites rotate: manually with command or automatically on interval"
+        },
+        "smartTheme.favoritesIntervalUnit": {
+          "type": "string",
+          "default": "hours",
+          "enum": [
+            "hours",
+            "days",
+            "weeks",
+            "months"
+          ],
+          "description": "Time unit for auto-rotation interval"
+        },
+        "smartTheme.favoritesIntervalValue": {
+          "type": "number",
+          "default": 1,
+          "description": "How many units between theme changes (e.g. 2 hours, 3 days)"
+        },
+        "smartTheme.workspaceThemes": {
+          "type": "object",
+          "default": {},
+          "description": "Map of workspace folder names to their assigned themes"
         }
       }
     },
     "commands": [
       {
         "command": "smartTheme.changeNow",
-        "title": "Smart Theme: Changed Theme Now"
+        "title": "Smart Theme: Change Theme Now"
       },
       {
-        "command": "smartTheme.toggleAuto",
-        "title": "Smart Theme: Enable/Disable Auto Theme"
+        "command": "smartTheme.toggle",
+        "title": "Smart Theme: Enable/Disable"
+      },
+      {
+        "command": "smartTheme.setMode",
+        "title": "Smart Theme: Set Mode"
+      },
+      {
+        "command": "smartTheme.addFavorite",
+        "title": "Smart Theme: Add Favorite"
+      },
+      {
+        "command": "smartTheme.setWorkspaceTheme",
+        "title": "Smart Theme: Set Workspace Theme"
+      },
+      {
+        "command": "smartTheme.manageWorkspaceThemes",
+        "title": "Smart Theme: Manage Workspace Themes"
+      },
+      {
+        "command": "smartTheme.listThemes",
+        "title": "Smart Theme: List All Themes"
       }
     ]
   },
