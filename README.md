@@ -1,86 +1,8 @@
 # Smart Theme Switcher
 
-> Automáticamente cambia el tema de VS Code según tu proyecto, hora del día, lenguaje de programación o tus favoritos.
-
 > Automatically changes your VS Code theme based on your project, time of day, programming language, or favorites.
 
----
-
-## Español 🇪🇸
-
-### ¿Qué hace?
-
-Smart Theme Switcher te permite cambiar el tema de Visual Studio Code de forma automática usando diferentes modos que puedes combinar entre sí:
-
-| Modo | Qué hace |
-|---|---|
-| **Workspace** | Cada proyecto tiene su propio tema. Cuando abres un proyecto, el tema se aplica automáticamente |
-| **Time** | Cambia el tema según la hora del día (mañana, tarde, noche) usando datos reales de amanecer/atardecer |
-| **Favorites** | Rota entre tus temas favoritos de forma manual (con comando) o automática (cada cierto tiempo) |
-| **Language** | Cambia el tema según el lenguaje del archivo que estás editando (JavaScript = oscuro, Python = claro, etc.) |
-
-### Comandos
-
-Abre la paleta de comandos (`Ctrl+Shift+P` / `Cmd+Shift+P`) y escribe `Smart Theme`:
-
-| Comando | Descripción |
-|---|---|
-| `Smart Theme: Change Theme Now` | Cambia al siguiente tema disponible según el modo activo. En modo favoritos, pasa al siguiente favorito |
-| `Smart Theme: Enable/Disable` | Activa o desactiva la extensión |
-| `Smart Theme: Set Mode` | Configura qué modos quieres usar (puedes seleccionar varios al mismo tiempo) |
-| `Smart Theme: Add Favorite` | Agrega temas a tu lista de favoritos para rotar. Los que ya tienes aparecen pre-seleccionados |
-| `Smart Theme: Set Workspace Theme` | Asigna un tema al proyecto que tienes abierto |
-| `Smart Theme: Manage Workspace Themes` | Gestiona todos los temas asignados a tus proyectos: cambiar, eliminar o agregar nuevos |
-| `Smart Theme: Set Language Theme` | Asigna un tema a un lenguaje específico (escribe el ID del lenguaje, ej: `javascript`, `python`) |
-| `Smart Theme: Manage Language Themes` | Gestiona todos los mapeos de lenguaje a tema: cambiar, eliminar o agregar nuevos |
-| `Smart Theme: List All Themes` | Muestra todos los temas detectados de todas las extensiones instaladas |
-
-### Configuración de Modos
-
-Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
-
-1. **Selecciona uno o varios** modos (workspace, favorites, time, language)
-2. Si elegiste **favorites**, te preguntará:
-   - `manual` → cambia solo con el comando "Change Theme Now"
-   - `auto` → rota automáticamente cada cierto tiempo
-   - Luego eliges la unidad: horas, días, semanas o meses
-   - Y escribes el número (ej: cada 2 horas, cada 3 días)
-3. Si elegiste **time**, te pedirá que elijas 3 temas: mañana, tarde y noche
-
-### Configuración (Settings)
-
-| Setting | Tipo | Default | Descripción |
-|---|---|---|---|
-| `smartTheme.enabled` | boolean | `true` | Activa o desactiva la extensión |
-| `smartTheme.enabledModes` | array | `["workspace"]` | Modos activos: workspace, favorites, time, language |
-| `smartTheme.favorites` | array | `["Default Dark+", "Default Light+", "Abyss"]` | Lista de temas favoritos |
-| `smartTheme.favoritesRotation` | string | `"manual"` | Rotación manual o automática |
-| `smartTheme.favoritesIntervalUnit` | string | `"hours"` | Unidad de tiempo para auto-rotación |
-| `smartTheme.favoritesIntervalValue` | number | `1` | Cada cuántas unidades cambia |
-| `smartTheme.workspaceThemes` | object | `{}` | Mapa de proyectos a temas |
-| `smartTheme.languageThemes` | object | `{}` | Mapa de lenguajes a temas |
-| `smartTheme.morningTheme` | string | `"Default Light+"` | Tema de la mañana |
-| `smartTheme.afternoonTheme` | string | `"Default Dark+"` | Tema de la tarde |
-| `smartTheme.nightTheme` | string | `"Abyss"` | Tema de la noche |
-| `smartTheme.enableNotification` | boolean | `true` | Mostrar notificación al cambiar tema |
-
-### Ejemplos de uso
-
-**Tema diferente por proyecto:**
-1. Ejecuta `Smart Theme: Set Mode` → selecciona `workspace`
-2. Abre tu proyecto de React → ejecuta `Smart Theme: Set Workspace Theme` → elige un tema oscuro
-3. Abre tu proyecto de Python → ejecuta `Smart Theme: Set Workspace Theme` → elige un tema claro
-
-**Temas por lenguaje:**
-1. Ejecuta `Smart Theme: Set Mode` → selecciona `language`
-2. Abre un archivo `.js` → ejecuta `Smart Theme: Set Language Theme` → escribe `javascript` → elige un tema oscuro
-3. Abre un archivo `.py` → ejecuta `Smart Theme: Set Language Theme` → escribe `python` → elige un tema claro
-4. Ahora cada vez que cambies entre archivos, el tema cambiará automáticamente
-
-**Rotación automática de favoritos cada 2 horas:**
-1. Ejecuta `Smart Theme: Add Favorite` → selecciona tus temas favoritos
-2. Ejecuta `Smart Theme: Set Mode` → selecciona `favorites`
-3. Elige `auto` → selecciona `hours` → escribe `2`
+> Automáticamente cambia el tema de VS Code según tu proyecto, hora del día, lenguaje de programación o tus favoritos.
 
 ---
 
@@ -164,7 +86,7 @@ When you run **Set Mode**, you can choose multiple modes:
 
 Common VS Code language IDs you can use:
 
-| Lenguaje | Language ID |
+| Language | Language ID |
 |---|---|
 | JavaScript | `javascript` |
 | TypeScript | `typescript` |
@@ -180,6 +102,84 @@ Common VS Code language IDs you can use:
 | PHP | `php` |
 
 > Tip: You can find the language ID of any file by clicking the language indicator in the bottom-right status bar of VS Code.
+
+---
+
+## Español 🇪🇸
+
+### ¿Qué hace?
+
+Smart Theme Switcher te permite cambiar el tema de Visual Studio Code de forma automática usando diferentes modos que puedes combinar entre sí:
+
+| Modo | Qué hace |
+|---|---|
+| **Workspace** | Cada proyecto tiene su propio tema. Cuando abres un proyecto, el tema se aplica automáticamente |
+| **Time** | Cambia el tema según la hora del día (mañana, tarde, noche) usando datos reales de amanecer/atardecer |
+| **Favorites** | Rota entre tus temas favoritos de forma manual (con comando) o automática (cada cierto tiempo) |
+| **Language** | Cambia el tema según el lenguaje del archivo que estás editando (JavaScript = oscuro, Python = claro, etc.) |
+
+### Comandos
+
+Abre la paleta de comandos (`Ctrl+Shift+P` / `Cmd+Shift+P`) y escribe `Smart Theme`:
+
+| Comando | Descripción |
+|---|---|
+| `Smart Theme: Change Theme Now` | Cambia al siguiente tema disponible según el modo activo. En modo favoritos, pasa al siguiente favorito |
+| `Smart Theme: Enable/Disable` | Activa o desactiva la extensión |
+| `Smart Theme: Set Mode` | Configura qué modos quieres usar (puedes seleccionar varios al mismo tiempo) |
+| `Smart Theme: Add Favorite` | Agrega temas a tu lista de favoritos para rotar. Los que ya tienes aparecen pre-seleccionados |
+| `Smart Theme: Set Workspace Theme` | Asigna un tema al proyecto que tienes abierto |
+| `Smart Theme: Manage Workspace Themes` | Gestiona todos los temas asignados a tus proyectos: cambiar, eliminar o agregar nuevos |
+| `Smart Theme: Set Language Theme` | Asigna un tema a un lenguaje específico (escribe el ID del lenguaje, ej: `javascript`, `python`) |
+| `Smart Theme: Manage Language Themes` | Gestiona todos los mapeos de lenguaje a tema: cambiar, eliminar o agregar nuevos |
+| `Smart Theme: List All Themes` | Muestra todos los temas detectados de todas las extensiones instaladas |
+
+### Configuración de Modos
+
+Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
+
+1. **Selecciona uno o varios** modos (workspace, favorites, time, language)
+2. Si elegiste **favorites**, te preguntará:
+   - `manual` → cambia solo con el comando "Change Theme Now"
+   - `auto` → rota automáticamente cada cierto tiempo
+   - Luego eliges la unidad: horas, días, semanas o meses
+   - Y escribes el número (ej: cada 2 horas, cada 3 días)
+3. Si elegiste **time**, te pedirá que elijas 3 temas: mañana, tarde y noche
+
+### Configuración (Settings)
+
+| Setting | Tipo | Default | Descripción |
+|---|---|---|---|
+| `smartTheme.enabled` | boolean | `true` | Activa o desactiva la extensión |
+| `smartTheme.enabledModes` | array | `["workspace"]` | Modos activos: workspace, favorites, time, language |
+| `smartTheme.favorites` | array | `["Default Dark+", "Default Light+", "Abyss"]` | Lista de temas favoritos |
+| `smartTheme.favoritesRotation` | string | `"manual"` | Rotación manual o automática |
+| `smartTheme.favoritesIntervalUnit` | string | `"hours"` | Unidad de tiempo para auto-rotación |
+| `smartTheme.favoritesIntervalValue` | number | `1` | Cada cuántas unidades cambia |
+| `smartTheme.workspaceThemes` | object | `{}` | Mapa de proyectos a temas |
+| `smartTheme.languageThemes` | object | `{}` | Mapa de lenguajes a temas |
+| `smartTheme.morningTheme` | string | `"Default Light+"` | Tema de la mañana |
+| `smartTheme.afternoonTheme` | string | `"Default Dark+"` | Tema de la tarde |
+| `smartTheme.nightTheme` | string | `"Abyss"` | Tema de la noche |
+| `smartTheme.enableNotification` | boolean | `true` | Mostrar notificación al cambiar tema |
+
+### Ejemplos de uso
+
+**Tema diferente por proyecto:**
+1. Ejecuta `Smart Theme: Set Mode` → selecciona `workspace`
+2. Abre tu proyecto de React → ejecuta `Smart Theme: Set Workspace Theme` → elige un tema oscuro
+3. Abre tu proyecto de Python → ejecuta `Smart Theme: Set Workspace Theme` → elige un tema claro
+
+**Temas por lenguaje:**
+1. Ejecuta `Smart Theme: Set Mode` → selecciona `language`
+2. Abre un archivo `.js` → ejecuta `Smart Theme: Set Language Theme` → escribe `javascript` → elige un tema oscuro
+3. Abre un archivo `.py` → ejecuta `Smart Theme: Set Language Theme` → escribe `python` → elige un tema claro
+4. Ahora cada vez que cambies entre archivos, el tema cambiará automáticamente
+
+**Rotación automática de favoritos cada 2 horas:**
+1. Ejecuta `Smart Theme: Add Favorite` → selecciona tus temas favoritos
+2. Ejecuta `Smart Theme: Set Mode` → selecciona `favorites`
+3. Elige `auto` → selecciona `hours` → escribe `2`
 
 ---
 

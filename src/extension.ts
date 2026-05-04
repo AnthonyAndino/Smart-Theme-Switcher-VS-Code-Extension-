@@ -336,13 +336,14 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("smartTheme.setMode", async () => {
 			const s = getSettings();
+			const currentModes = s.get<string[]>("enabledModes") || [];
 
 			const modePick = await vscode.window.showQuickPick(
 				[
-					{ label: "workspace", description: "Theme per project", detail: "Each project gets its own theme" },
-					{ label: "favorites", description: "Rotate favorite themes", detail: "Manual or automatic rotation" },
-					{ label: "time", description: "Theme by time of day", detail: "Uses sunrise/sunset or fixed hours" },
-					{ label: "language", description: "Theme by file language", detail: "JavaScript=dark, Python=light, etc." },
+					{ label: "workspace", description: "Theme per project", detail: "Each project gets its own theme", picked: currentModes.includes("workspace") },
+					{ label: "favorites", description: "Rotate favorite themes", detail: "Manual or automatic rotation", picked: currentModes.includes("favorites") },
+					{ label: "time", description: "Theme by time of day", detail: "Uses sunrise/sunset or fixed hours", picked: currentModes.includes("time") },
+					{ label: "language", description: "Theme by file language", detail: "JavaScript=dark, Python=light, etc.", picked: currentModes.includes("language") },
 				],
 				{
 					placeHolder: "Select modes (you can pick multiple)",
