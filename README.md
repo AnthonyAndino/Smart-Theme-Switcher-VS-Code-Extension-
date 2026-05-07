@@ -19,6 +19,12 @@ Smart Theme Switcher lets you automatically change the Visual Studio Code theme 
 | **Favorites** | Rotates through your favorite themes manually (with command) or automatically (on a time interval) |
 | **Language** | Changes the theme based on the language of the file you're editing (JavaScript = dark, Python = light, etc.) |
 
+### Demos
+
+| Workspace Mode | Language Mode |
+|---|---|
+| ![Workspace Mode Demo](assets/workspace_mode.gif) | ![Language Mode Demo](assets/language_mode.gif) |
+
 ### Commands
 
 Open the command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type `Smart Theme`:
@@ -117,6 +123,12 @@ Smart Theme Switcher te permite cambiar el tema de Visual Studio Code de forma a
 | **Time** | Cambia el tema según la hora del día (mañana, tarde, noche) usando datos reales de amanecer/atardecer |
 | **Favorites** | Rota entre tus temas favoritos de forma manual (con comando) o automática (cada cierto tiempo) |
 | **Language** | Cambia el tema según el lenguaje del archivo que estás editando (JavaScript = oscuro, Python = claro, etc.) |
+
+### Demos
+
+| Workspace Mode | Language Mode |
+|---|---|
+| ![Workspace Mode Demo](assets/workspace_mode.gif) | ![Language Mode Demo](assets/language_mode.gif) |
 
 ### Comandos
 

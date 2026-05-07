@@ -7,3 +7,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 
 - Initial release
+
+## [0.0.6] - 2026-05-07
+
+- Added demo GIFs to README (Workspace Mode and Language Mode)
+- Update version 0.0.6
+- Compatible with Antigravity and Visual Studio
