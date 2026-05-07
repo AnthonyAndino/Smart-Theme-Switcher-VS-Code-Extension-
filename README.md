@@ -21,9 +21,13 @@ Smart Theme Switcher lets you automatically change the Visual Studio Code theme 
 
 ### Demos
 
-| Workspace Mode | Language Mode |
-|---|---|
-| ![Workspace Mode Demo](assets/workspace_mode.gif) | ![Language Mode Demo](assets/language_mode.gif) |
+<div align="center">
+  <p><strong>Workspace Mode</strong></p>
+  <img src="assets/workspace_mode.gif" alt="Workspace Mode Demo" width="700">
+  <br><br>
+  <p><strong>Language Mode</strong></p>
+  <img src="assets/language_mode.gif" alt="Language Mode Demo" width="700">
+</div>
 
 ### Commands
 
@@ -126,9 +130,13 @@ Smart Theme Switcher te permite cambiar el tema de Visual Studio Code de forma a
 
 ### Demos
 
-| Workspace Mode | Language Mode |
-|---|---|
-| ![Workspace Mode Demo](assets/workspace_mode.gif) | ![Language Mode Demo](assets/language_mode.gif) |
+<div align="center">
+  <p><strong>Workspace Mode</strong></p>
+  <img src="assets/workspace_mode.gif" alt="Workspace Mode Demo" width="700">
+  <br><br>
+  <p><strong>Language Mode</strong></p>
+  <img src="assets/language_mode.gif" alt="Language Mode Demo" width="700">
+</div>
 
 ### Comandos
 
@@ -206,6 +214,10 @@ Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
 - Alguna extensión de temas (como Doki Theme) usa IDs internos que pueden no coincidir con sus nombres visibles. La extensión intenta resolverlos automáticamente, pero si un tema no se aplica, prueba seleccionando la versión con el ID alfanumérico en el selector de favoritos.
 
 ## Release Notes / Notas de Versión
+
+### 0.0.7
+
+- Improved demo layout in README / Mejora en el diseño de los demos en el README
 
 ### 0.0.1
 
