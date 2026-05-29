@@ -4,9 +4,15 @@ All notable changes to the "smart-theme-switcher" extension will be documented i
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [Unreleased]
+## [0.0.8] - 2026-05-29
 
-- Initial release
+- Live theme preview in all pickers (hover to preview, click eye button for 5s preview)
+- Configurable latitude/longitude for accurate sunrise/sunset times
+- Auto-detect location via IP when enabling time mode
+- "Select All Themes" option in Add Favorite picker
+- Optimized startup performance (onStartupFinished instead of *)
+- Sync getAllThemes() with deduplication via Set
+- Event listeners and intervals properly disposed on deactivate
 
 ## [0.0.6] - 2026-05-07
 

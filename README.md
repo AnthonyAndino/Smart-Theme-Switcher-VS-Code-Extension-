@@ -15,7 +15,7 @@ Smart Theme Switcher lets you automatically change the Visual Studio Code theme 
 | Mode | What it does |
 |---|---|
 | **Workspace** | Each project gets its own theme. When you open a project, the theme applies automatically |
-| **Time** | Changes the theme based on time of day (morning, afternoon, night) using real sunrise/sunset data |
+| **Time** | Changes the theme based on time of day (morning, afternoon, night) using real sunrise/sunset data with your location |
 | **Favorites** | Rotates through your favorite themes manually (with command) or automatically (on a time interval) |
 | **Language** | Changes the theme based on the language of the file you're editing (JavaScript = dark, Python = light, etc.) |
 
@@ -37,13 +37,15 @@ Open the command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type `Smart Theme`
 |---|---|
 | `Smart Theme: Change Theme Now` | Switch to the next available theme based on the active mode. In favorites mode, cycles to the next favorite |
 | `Smart Theme: Enable/Disable` | Enable or disable the extension |
-| `Smart Theme: Set Mode` | Configure which modes you want to use (you can select multiple at the same time) |
+| `Smart Theme: Set Mode` | Configure which modes you want to use (you can select multiple at the same time). If you enable time mode without a location set, you'll be prompted to configure it |
 | `Smart Theme: Add Favorite` | Add themes to your favorites list for rotation. Currently saved favorites appear pre-checked |
 | `Smart Theme: Set Workspace Theme` | Assign a theme to your currently open project |
 | `Smart Theme: Manage Workspace Themes` | Manage all project-theme mappings: change, remove, or add new ones |
 | `Smart Theme: Set Language Theme` | Assign a theme to a specific language (enter the language ID, e.g. `javascript`, `python`) |
 | `Smart Theme: Manage Language Themes` | Manage all language-to-theme mappings: change, remove, or add new ones |
 | `Smart Theme: List All Themes` | Shows all detected themes from all installed extensions |
+
+> 💡 All theme pickers now feature **live preview** — hover over a theme to see it instantly, or click the 👁️ (eye) button for a 5-second preview before reverting to your original theme.
 
 ### Mode Configuration
 
@@ -55,7 +57,7 @@ When you run **Set Mode**, you can choose multiple modes:
    - `auto` → rotate automatically on a time interval
    - Then pick the unit: hours, days, weeks, or months
    - And enter the number (e.g. every 2 hours, every 3 days)
-3. If you chose **time**, you'll pick 3 themes: morning, afternoon, and night
+3. If you chose **time**, you'll pick 3 themes: morning, afternoon, and night. If you haven't set your location yet, you'll be asked to auto-detect it (via IP) or enter your latitude/longitude manually for accurate sunrise/sunset times
 
 ### Settings
 
@@ -73,6 +75,8 @@ When you run **Set Mode**, you can choose multiple modes:
 | `smartTheme.afternoonTheme` | string | `"Default Dark+"` | Afternoon theme |
 | `smartTheme.nightTheme` | string | `"Abyss"` | Night theme |
 | `smartTheme.enableNotification` | boolean | `true` | Show notification when theme changes |
+| `smartTheme.latitude` | number\|null | `null` | Your latitude for sunrise/sunset calculation (e.g. 40.7128 for New York) |
+| `smartTheme.longitude` | number\|null | `null` | Your longitude for sunrise/sunset calculation (e.g. -74.0060 for New York) |
 
 ### Usage Examples
 
@@ -124,7 +128,7 @@ Smart Theme Switcher te permite cambiar el tema de Visual Studio Code de forma a
 | Modo | Qué hace |
 |---|---|
 | **Workspace** | Cada proyecto tiene su propio tema. Cuando abres un proyecto, el tema se aplica automáticamente |
-| **Time** | Cambia el tema según la hora del día (mañana, tarde, noche) usando datos reales de amanecer/atardecer |
+| **Time** | Cambia el tema según la hora del día (mañana, tarde, noche) usando datos reales de amanecer/atardecer con tu ubicación |
 | **Favorites** | Rota entre tus temas favoritos de forma manual (con comando) o automática (cada cierto tiempo) |
 | **Language** | Cambia el tema según el lenguaje del archivo que estás editando (JavaScript = oscuro, Python = claro, etc.) |
 
@@ -146,13 +150,15 @@ Abre la paleta de comandos (`Ctrl+Shift+P` / `Cmd+Shift+P`) y escribe `Smart The
 |---|---|
 | `Smart Theme: Change Theme Now` | Cambia al siguiente tema disponible según el modo activo. En modo favoritos, pasa al siguiente favorito |
 | `Smart Theme: Enable/Disable` | Activa o desactiva la extensión |
-| `Smart Theme: Set Mode` | Configura qué modos quieres usar (puedes seleccionar varios al mismo tiempo) |
+| `Smart Theme: Set Mode` | Configura qué modos quieres usar (puedes seleccionar varios al mismo tiempo). Si activas modo time sin ubicación, te pedirá configurarla |
 | `Smart Theme: Add Favorite` | Agrega temas a tu lista de favoritos para rotar. Los que ya tienes aparecen pre-seleccionados |
 | `Smart Theme: Set Workspace Theme` | Asigna un tema al proyecto que tienes abierto |
 | `Smart Theme: Manage Workspace Themes` | Gestiona todos los temas asignados a tus proyectos: cambiar, eliminar o agregar nuevos |
 | `Smart Theme: Set Language Theme` | Asigna un tema a un lenguaje específico (escribe el ID del lenguaje, ej: `javascript`, `python`) |
 | `Smart Theme: Manage Language Themes` | Gestiona todos los mapeos de lenguaje a tema: cambiar, eliminar o agregar nuevos |
 | `Smart Theme: List All Themes` | Muestra todos los temas detectados de todas las extensiones instaladas |
+
+> 💡 Todos los selectores de temas ahora tienen **vista previa en vivo** — pasa el mouse sobre un tema para verlo al instante, o haz clic en el botón 👁️ (ojo) para una vista previa de 5 segundos antes de volver a tu tema original.
 
 ### Configuración de Modos
 
@@ -164,7 +170,7 @@ Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
    - `auto` → rota automáticamente cada cierto tiempo
    - Luego eliges la unidad: horas, días, semanas o meses
    - Y escribes el número (ej: cada 2 horas, cada 3 días)
-3. Si elegiste **time**, te pedirá que elijas 3 temas: mañana, tarde y noche
+3. Si elegiste **time**, te pedirá que elijas 3 temas: mañana, tarde y noche. Si no has configurado tu ubicación, te preguntará si quieres detectarla automáticamente (por IP) o ingresar tu latitud/longitud manualmente para obtener horas exactas de amanecer/atardecer
 
 ### Configuración (Settings)
 
@@ -182,6 +188,8 @@ Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
 | `smartTheme.afternoonTheme` | string | `"Default Dark+"` | Tema de la tarde |
 | `smartTheme.nightTheme` | string | `"Abyss"` | Tema de la noche |
 | `smartTheme.enableNotification` | boolean | `true` | Mostrar notificación al cambiar tema |
+| `smartTheme.latitude` | number\|null | `null` | Tu latitud para el cálculo del amanecer/atardecer (ej: 40.7128 para Nueva York) |
+| `smartTheme.longitude` | number\|null | `null` | Tu longitud para el cálculo del amanecer/atardecer (ej: -74.0060 para Nueva York) |
 
 ### Ejemplos de uso
 
@@ -214,6 +222,14 @@ Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
 - Alguna extensión de temas (como Doki Theme) usa IDs internos que pueden no coincidir con sus nombres visibles. La extensión intenta resolverlos automáticamente, pero si un tema no se aplica, prueba seleccionando la versión con el ID alfanumérico en el selector de favoritos.
 
 ## Release Notes / Notas de Versión
+
+### 0.0.8
+
+- Live theme preview in all pickers (hover to preview, click eye button for 5s preview) / Vista previa en vivo en todos los selectores (previsualiza al pasar el mouse, haz clic en el ojo para 5s de vista previa)
+- Configurable latitude/longitude for accurate sunrise/sunset times / Latitud y longitud configurables para tiempos exactos de amanecer/atardecer
+- Auto-detect location via IP when enabling time mode / Detecta ubicación automáticamente por IP al activar modo time
+- "Select All Themes" option in Add Favorite / Opción "Seleccionar todos los temas" en Agregar Favoritos
+- Optimized startup performance / Rendimiento de inicio optimizado
 
 ### 0.0.7
 

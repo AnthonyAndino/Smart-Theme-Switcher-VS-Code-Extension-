@@ -3,7 +3,7 @@
   "displayName": "ThemeLab Switcher",
   "icon": "logo.png",
   "description": "Automatically changes VSCode theme based on time",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "AnthonyAndino",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
     "Themes"
   ],
   "activationEvents": [
-    "*"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -93,6 +93,16 @@
           "type": "object",
           "default": {},
           "description": "Map of workspace folder names to their assigned themes"
+        },
+        "smartTheme.latitude": {
+          "type": ["number", "null"],
+          "default": null,
+          "description": "Your latitude for sunrise/sunset calculation (e.g. 40.7128 for New York, -33.8688 for Sydney)"
+        },
+        "smartTheme.longitude": {
+          "type": ["number", "null"],
+          "default": null,
+          "description": "Your longitude for sunrise/sunset calculation (e.g. -74.0060 for New York, 151.2093 for Sydney)"
         }
       }
     },

@@ -52,8 +52,8 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	async function getAllThemes(): Promise<string[]> {
-		const themes: string[] = [];
+	function getAllThemes(): string[] {
+		const themes = new Set<string>();
 
 		for (const ext of vscode.extensions.all) {
 			const contributes = ext.packageJSON?.contributes;
@@ -62,12 +62,12 @@ export function activate(context: vscode.ExtensionContext) {
 			const isDoki = ext.id.toLowerCase().includes('doki');
 
 			for (const t of contributes.themes) {
-				if (t.label) themes.push(t.label);
-				if (isDoki && t.id) themes.push(t.id);
+				if (t.label) themes.add(t.label);
+				if (isDoki && t.id) themes.add(t.id);
 			}
 		}
 
-		return themes;
+		return [...themes];
 	}
 
 	async function getWorkspaceTheme(): Promise<string | null> {
@@ -97,27 +97,36 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (!morning && !afternoon && !night) return null;
 
-		try {
-			const response = await fetch(
-				`https://api.sunrise-sunset.org/json?lat=14.0723&lng=-87.1921&formatted=0`
-			);
-			const data = await response.json() as SunriseResponse;
-			const sunrise = new Date(data.results.sunrise);
-			const sunset = new Date(data.results.sunset);
-			const now = new Date();
+		const lat = s.get<number | null>("latitude");
+		const lng = s.get<number | null>("longitude");
 
-			if (now >= sunrise && now < sunset) {
-				if (morning) return morning;
-				if (night) return night;
-				return null;
+		// If user has configured coordinates, use the sunrise/sunset API
+		if (lat !== null && lat !== undefined && lng !== null && lng !== undefined) {
+			try {
+				const response = await fetch(
+					`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`
+				);
+				const data = await response.json() as SunriseResponse;
+				const sunrise = new Date(data.results.sunrise);
+				const sunset = new Date(data.results.sunset);
+				const now = new Date();
+
+				if (now >= sunrise && now < sunset) {
+					if (morning) return morning;
+					if (night) return night;
+					return null;
+				}
+				return night || morning || null;
+			} catch {
+				// API failed, fall through to fixed hours
 			}
-			return night || morning || null;
-		} catch {
-			const hour = new Date().getHours();
-			if (hour >= 6 && hour < 12) return morning || "Default Light+";
-			if (hour >= 12 && hour < 18) return afternoon || "Default Dark+";
-			return night || "Abyss";
 		}
+
+		// Fallback: use fixed time ranges (works without coordinates)
+		const hour = new Date().getHours();
+		if (hour >= 6 && hour < 12) return morning || "Default Light+";
+		if (hour >= 12 && hour < 18) return afternoon || "Default Dark+";
+		return night || "Abyss";
 	}
 
 	function getLanguageTheme(): string | null {
@@ -191,6 +200,114 @@ export function activate(context: vscode.ExtensionContext) {
 		return [...new Set(candidates.filter(Boolean))];
 	}
 
+	async function pickWithPreview<T extends vscode.QuickPickItem>(
+		items: T[],
+		placeHolder: string,
+		options?: { canPickMany?: boolean; alwaysRevert?: boolean },
+	): Promise<T | T[] | undefined> {
+		const original = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme") || "";
+		let accepted = false;
+		let previewTimer: ReturnType<typeof setTimeout> | undefined;
+		let previewCts: vscode.CancellationTokenSource | undefined;
+
+		return new Promise((resolve) => {
+			const qp = vscode.window.createQuickPick<T>();
+
+			qp.items = items.map(item => {
+				const isTheme = typeof item.label === 'string' && !item.label.startsWith("$(");
+				return { ...item, buttons: isTheme ? [{ iconPath: new vscode.ThemeIcon("eye"), tooltip: "Preview (5s)" }] : [] };
+			}) as any;
+
+			qp.placeholder = placeHolder;
+			qp.canSelectMany = options?.canPickMany ?? false;
+			qp.matchOnDescription = true;
+			qp.matchOnDetail = true;
+
+			// Pre-select items that have picked=true (createQuickPick requires explicit selectedItems)
+			if (qp.canSelectMany) {
+				qp.selectedItems = qp.items.filter(item => (item as any).picked) as readonly T[];
+			}
+
+			function cancelPreviewTimer() {
+				if (previewTimer) {
+					clearTimeout(previewTimer);
+					previewTimer = undefined;
+				}
+				if (previewCts) {
+					previewCts.cancel();
+					previewCts.dispose();
+					previewCts = undefined;
+				}
+			}
+
+			qp.onDidChangeActive(async (active) => {
+				if (active.length > 0 && active[0].label && !active[0].label.startsWith("$(")) {
+					cancelPreviewTimer();
+					await setThemeDirect(active[0].label, true);
+				}
+			});
+
+			qp.onDidTriggerItemButton(async (e) => {
+				if (e.item.label && !e.item.label.startsWith("$(")) {
+					cancelPreviewTimer();
+
+					const themeName = e.item.label;
+					await setThemeDirect(themeName, true);
+
+					previewCts = new vscode.CancellationTokenSource();
+					const token = previewCts.token;
+
+					vscode.window.withProgress(
+						{
+							location: vscode.ProgressLocation.Notification,
+							title: `Previewing "${themeName}"`,
+							cancellable: true,
+						},
+						async (progress, cancelToken) => {
+							const totalSeconds = 5;
+							for (let i = totalSeconds; i > 0; i--) {
+								if (token.isCancellationRequested || cancelToken.isCancellationRequested) return;
+								progress.report({ message: `reverting in ${i}s...`, increment: (1 / totalSeconds) * 100 });
+								await new Promise<void>((r) => {
+									previewTimer = setTimeout(r, 1000);
+								});
+							}
+							if (!token.isCancellationRequested && !cancelToken.isCancellationRequested) {
+								await setThemeDirect(original, true);
+							}
+						}
+					);
+				}
+			});
+
+			qp.onDidAccept(() => {
+				accepted = true;
+				cancelPreviewTimer();
+				const selected = qp.selectedItems;
+				if (options?.alwaysRevert && selected.length > 0) {
+					setThemeDirect(original, true);
+				}
+				if (options?.canPickMany) {
+					resolve(selected as any);
+				} else {
+					resolve((selected[0] ?? undefined) as any);
+				}
+				qp.dispose();
+			});
+
+			qp.onDidHide(() => {
+				cancelPreviewTimer();
+				if (!accepted) {
+					setThemeDirect(original, true);
+					resolve(undefined);
+				}
+				qp.dispose();
+			});
+
+			qp.show();
+		});
+	}
+
 	async function applyTheme(forceTheme?: string) {
 		const s = getSettings();
 		if (!(s.get<boolean>("enabled") ?? true)) return;
@@ -249,16 +366,33 @@ export function activate(context: vscode.ExtensionContext) {
 	applyTheme();
 	restartAutoInterval();
 
-	vscode.workspace.onDidChangeWorkspaceFolders(() => applyTheme());
+	// Register event listeners in subscriptions for proper disposal
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeWorkspaceFolders(() => applyTheme())
+	);
 
-	vscode.window.onDidChangeActiveTextEditor(() => onLanguageChange());
+	context.subscriptions.push(
+		vscode.window.onDidChangeActiveTextEditor(() => onLanguageChange())
+	);
 
-	vscode.workspace.onDidChangeConfiguration((e) => {
-		if (e.affectsConfiguration("smartTheme.enabledModes") ||
-			e.affectsConfiguration("smartTheme.favoritesRotation") ||
-			e.affectsConfiguration("smartTheme.favoritesIntervalUnit") ||
-			e.affectsConfiguration("smartTheme.favoritesIntervalValue")) {
-			restartAutoInterval();
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration((e) => {
+			if (e.affectsConfiguration("smartTheme.enabledModes") ||
+				e.affectsConfiguration("smartTheme.favoritesRotation") ||
+				e.affectsConfiguration("smartTheme.favoritesIntervalUnit") ||
+				e.affectsConfiguration("smartTheme.favoritesIntervalValue")) {
+				restartAutoInterval();
+			}
+		})
+	);
+
+	// Clean up auto-rotation interval on deactivate
+	context.subscriptions.push({
+		dispose: () => {
+			if (autoInterval) {
+				clearInterval(autoInterval);
+				autoInterval = undefined;
+			}
 		}
 	});
 
@@ -408,6 +542,66 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			if (selected.includes("time")) {
+				// Prompt for location if not configured
+				const lat = s.get<number | null>("latitude");
+				const lng = s.get<number | null>("longitude");
+
+				if (lat === null || lat === undefined || lng === null || lng === undefined) {
+					const configureLocation = await vscode.window.showInformationMessage(
+						"Set your location for accurate sunrise/sunset times?",
+						"Auto-detect",
+						"Enter Manually",
+						"Skip"
+					);
+
+					if (configureLocation === "Auto-detect") {
+						try {
+							const geoResponse = await fetch("http://ip-api.com/json/?fields=lat,lon,city,country");
+							const geoData = await geoResponse.json() as { lat: number; lon: number; city: string; country: string };
+
+							if (geoData.lat && geoData.lon) {
+								await s.update("latitude", geoData.lat, vscode.ConfigurationTarget.Global);
+								await s.update("longitude", geoData.lon, vscode.ConfigurationTarget.Global);
+								vscode.window.showInformationMessage(
+									`Location detected: ${geoData.city || "Unknown"}, ${geoData.country || "Unknown"} (${geoData.lat}, ${geoData.lon})`
+								);
+							} else {
+								vscode.window.showWarningMessage("Could not detect location. Using fixed time ranges.");
+							}
+						} catch {
+							vscode.window.showWarningMessage("Could not detect location. Using fixed time ranges.");
+						}
+					} else if (configureLocation === "Enter Manually") {
+						const latInput = await vscode.window.showInputBox({
+							placeHolder: "e.g. 40.7128 (New York), 48.8566 (Paris), -33.8688 (Sydney)",
+							prompt: "Enter your latitude",
+							validateInput: (val) => {
+								const n = parseFloat(val);
+								if (isNaN(n) || n < -90 || n > 90) return "Enter a valid latitude (-90 to 90)";
+								return null;
+							}
+						});
+
+						if (latInput) {
+							const lngInput = await vscode.window.showInputBox({
+								placeHolder: "e.g. -74.0060 (New York), 2.3522 (Paris), 151.2093 (Sydney)",
+								prompt: "Enter your longitude",
+								validateInput: (val) => {
+									const n = parseFloat(val);
+									if (isNaN(n) || n < -180 || n > 180) return "Enter a valid longitude (-180 to 180)";
+									return null;
+								}
+							});
+
+							if (lngInput) {
+								await s.update("latitude", parseFloat(latInput), vscode.ConfigurationTarget.Global);
+								await s.update("longitude", parseFloat(lngInput), vscode.ConfigurationTarget.Global);
+								vscode.window.showInformationMessage(`Location set: ${latInput}, ${lngInput}`);
+							}
+						}
+					}
+				}
+
 				await pickTimeThemes();
 			}
 
@@ -422,27 +616,23 @@ export function activate(context: vscode.ExtensionContext) {
 	// -------------------------------
 	async function pickTimeThemes() {
 		const s = getSettings();
-		const allThemes = await getAllThemes();
+		const allThemes = getAllThemes();
 
 		if (allThemes.length === 0) {
 			vscode.window.showWarningMessage("No themes found");
 			return;
 		}
 
-		const morning = await vscode.window.showQuickPick(allThemes, {
-			placeHolder: "Select morning theme (6am - 12pm)",
-		});
-		if (morning) await s.update("morningTheme", morning, vscode.ConfigurationTarget.Global);
+		const items = allThemes.map(t => ({ label: t }));
 
-		const afternoon = await vscode.window.showQuickPick(allThemes, {
-			placeHolder: "Select afternoon theme (12pm - 6pm)",
-		});
-		if (afternoon) await s.update("afternoonTheme", afternoon, vscode.ConfigurationTarget.Global);
+		const morning = await pickWithPreview(items, "Select morning theme (6am - 12pm)", { alwaysRevert: true }) as vscode.QuickPickItem | undefined;
+		if (morning) await s.update("morningTheme", morning.label, vscode.ConfigurationTarget.Global);
 
-		const night = await vscode.window.showQuickPick(allThemes, {
-			placeHolder: "Select night theme (6pm - 6am)",
-		});
-		if (night) await s.update("nightTheme", night, vscode.ConfigurationTarget.Global);
+		const afternoon = await pickWithPreview(items, "Select afternoon theme (12pm - 6pm)", { alwaysRevert: true }) as vscode.QuickPickItem | undefined;
+		if (afternoon) await s.update("afternoonTheme", afternoon.label, vscode.ConfigurationTarget.Global);
+
+		const night = await pickWithPreview(items, "Select night theme (6pm - 6am)", { alwaysRevert: true }) as vscode.QuickPickItem | undefined;
+		if (night) await s.update("nightTheme", night.label, vscode.ConfigurationTarget.Global);
 	}
 
 	// -------------------------------
@@ -452,7 +642,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand("smartTheme.addFavorite", async () => {
 			const s = getSettings();
 			const currentFavorites = s.get<string[]>("favorites") || [];
-			const allThemes = await getAllThemes();
+			const allThemes = getAllThemes();
 
 			if (allThemes.length === 0) {
 				vscode.window.showWarningMessage("No themes found from installed extensions");
@@ -465,27 +655,38 @@ export function activate(context: vscode.ExtensionContext) {
 				picked: currentFavorites.includes(t)
 			}));
 
-			items.unshift({
-				label: "$(clear-all) Clear All Favorites",
-				description: `${currentFavorites.length} currently saved`,
-				picked: false
-			});
+			items.unshift(
+				{
+					label: "$(checklist) Select All Themes",
+					description: `${allThemes.length} themes available`,
+					picked: false
+				},
+				{
+					label: "$(clear-all) Clear All Favorites",
+					description: `${currentFavorites.length} currently saved`,
+					picked: false
+				}
+			);
 
-			const selected = await vscode.window.showQuickPick(items, {
-				canPickMany: true,
-				placeHolder: "Select favorite themes (currently selected will be pre-checked)"
-			});
+			const selected = await pickWithPreview(items, "Select favorite themes (currently selected will be pre-checked)", { canPickMany: true, alwaysRevert: true }) as vscode.QuickPickItem[] | undefined;
 
 			if (!selected || selected.length === 0) return;
 
-			const hasClear = selected.some(s => s.label === "$(clear-all) Clear All Favorites");
+			const hasSelectAll = selected.some(item => item.label === "$(checklist) Select All Themes");
+			if (hasSelectAll) {
+				await s.update("favorites", allThemes, vscode.ConfigurationTarget.Global);
+				vscode.window.showInformationMessage(`All ${allThemes.length} themes added to favorites`);
+				return;
+			}
+
+			const hasClear = selected.some(item => item.label === "$(clear-all) Clear All Favorites");
 			if (hasClear) {
 				await s.update("favorites", [], vscode.ConfigurationTarget.Global);
 				vscode.window.showInformationMessage("All favorites cleared");
 				return;
 			}
 
-			const labels = selected.map(s => s.label);
+			const labels = selected.map(item => item.label);
 			await s.update("favorites", labels, vscode.ConfigurationTarget.Global);
 			vscode.window.showInformationMessage(`Favorites updated: ${labels.length} themes`);
 		})
@@ -504,18 +705,19 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			const allThemes = await getAllThemes();
+			const allThemes = getAllThemes();
 
-			const selected = await vscode.window.showQuickPick(allThemes, {
-				placeHolder: `Select theme for "${folderName}"`
-			});
+			const selected = await pickWithPreview(
+				allThemes.map(t => ({ label: t })),
+				`Select theme for "${folderName}"`
+			) as vscode.QuickPickItem | undefined;
 
 			if (!selected) return;
 
 			const map = s.get<Record<string, string>>("workspaceThemes") || {};
-			map[folderName] = selected;
+			map[folderName] = selected.label;
 			await s.update("workspaceThemes", map, vscode.ConfigurationTarget.Global);
-			await setThemeDirect(selected);
+			await setThemeDirect(selected.label);
 		})
 	);
 
@@ -527,7 +729,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const s = getSettings();
 			const map = s.get<Record<string, string>>("workspaceThemes") || {};
 			const entries = Object.entries(map);
-			const allThemes = await getAllThemes();
+			const allThemes = getAllThemes();
 
 			const config = vscode.workspace.getConfiguration();
 			const currentGlobalTheme = config.get<string>("workbench.colorTheme") || "";
@@ -568,15 +770,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 				if (!projectPick) return;
 
-				const themePick = await vscode.window.showQuickPick(allThemes, {
-					placeHolder: `Select theme for "${projectPick}"`
-				});
+				const themePick = await pickWithPreview(
+					allThemes.map(t => ({ label: t })),
+					`Select theme for "${projectPick}"`
+				) as vscode.QuickPickItem | undefined;
 
 				if (!themePick) return;
 
-				map[projectPick] = themePick;
+				map[projectPick] = themePick.label;
 				await s.update("workspaceThemes", map, vscode.ConfigurationTarget.Global);
-				vscode.window.showInformationMessage(`"${projectPick}" → ${themePick}`);
+				vscode.window.showInformationMessage(`"${projectPick}" → ${themePick.label}`);
 				return;
 			}
 
@@ -590,20 +793,21 @@ export function activate(context: vscode.ExtensionContext) {
 			if (!actions) return;
 
 			if (actions.action === "change") {
-				const newTheme = await vscode.window.showQuickPick(allThemes, {
-					placeHolder: `New theme for "${picked.project}"`
-				});
+				const newTheme = await pickWithPreview(
+					allThemes.map(t => ({ label: t })),
+					`New theme for "${picked.project}"`
+				) as vscode.QuickPickItem | undefined;
 
 				if (!newTheme) return;
 
-				map[picked.project] = newTheme;
+				map[picked.project] = newTheme.label;
 				await s.update("workspaceThemes", map, vscode.ConfigurationTarget.Global);
 
 				if (vscode.workspace.workspaceFolders?.[0]?.name === picked.project) {
-					await setThemeDirect(newTheme);
+					await setThemeDirect(newTheme.label);
 				}
 
-				vscode.window.showInformationMessage(`"${picked.project}" → ${newTheme}`);
+				vscode.window.showInformationMessage(`"${picked.project}" → ${newTheme.label}`);
 			} else {
 				delete map[picked.project];
 				await s.update("workspaceThemes", map, vscode.ConfigurationTarget.Global);
@@ -631,22 +835,23 @@ export function activate(context: vscode.ExtensionContext) {
 
 			if (!langPick) return;
 
-			const allThemes = await getAllThemes();
+			const allThemes = getAllThemes();
 
-			const themePick = await vscode.window.showQuickPick(allThemes, {
-				placeHolder: `Select theme for "${langPick}"`
-			});
+			const themePick = await pickWithPreview(
+				allThemes.map(t => ({ label: t })),
+				`Select theme for "${langPick}"`
+			) as vscode.QuickPickItem | undefined;
 
 			if (!themePick) return;
 
-			map[langPick] = themePick;
+			map[langPick] = themePick.label;
 			await s.update("languageThemes", map, vscode.ConfigurationTarget.Global);
 
 			const entries = Object.entries(map);
-			vscode.window.showInformationMessage(`"${langPick}" → ${themePick} (${entries.length} languages mapped)`);
+			vscode.window.showInformationMessage(`"${langPick}" → ${themePick.label} (${entries.length} languages mapped)`);
 
 			if (vscode.window.activeTextEditor?.document.languageId === langPick) {
-				await setThemeDirect(themePick);
+				await setThemeDirect(themePick.label);
 			}
 		})
 	);
@@ -682,7 +887,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 			if (!picked) return;
 
-			const allThemes = await getAllThemes();
+			const allThemes = getAllThemes();
 
 			if (!picked.lang) {
 				const langInput = await vscode.window.showInputBox({
@@ -692,15 +897,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 				if (!langInput) return;
 
-				const themePick = await vscode.window.showQuickPick(allThemes, {
-					placeHolder: `Select theme for "${langInput}"`
-				});
+				const themePick = await pickWithPreview(
+					allThemes.map(t => ({ label: t })),
+					`Select theme for "${langInput}"`
+				) as vscode.QuickPickItem | undefined;
 
 				if (!themePick) return;
 
-				map[langInput] = themePick;
+				map[langInput] = themePick.label;
 				await s.update("languageThemes", map, vscode.ConfigurationTarget.Global);
-				vscode.window.showInformationMessage(`"${langInput}" → ${themePick}`);
+				vscode.window.showInformationMessage(`"${langInput}" → ${themePick.label}`);
 				return;
 			}
 
@@ -714,20 +920,21 @@ export function activate(context: vscode.ExtensionContext) {
 			if (!actions) return;
 
 			if (actions.action === "change") {
-				const newTheme = await vscode.window.showQuickPick(allThemes, {
-					placeHolder: `New theme for "${picked.lang}"`
-				});
+				const newTheme = await pickWithPreview(
+					allThemes.map(t => ({ label: t })),
+					`New theme for "${picked.lang}"`
+				) as vscode.QuickPickItem | undefined;
 
 				if (!newTheme) return;
 
-				map[picked.lang] = newTheme;
+				map[picked.lang] = newTheme.label;
 				await s.update("languageThemes", map, vscode.ConfigurationTarget.Global);
 
 				if (vscode.window.activeTextEditor?.document.languageId === picked.lang) {
-					await setThemeDirect(newTheme);
+					await setThemeDirect(newTheme.label);
 				}
 
-				vscode.window.showInformationMessage(`"${picked.lang}" → ${newTheme}`);
+				vscode.window.showInformationMessage(`"${picked.lang}" → ${newTheme.label}`);
 			} else {
 				delete map[picked.lang];
 				await s.update("languageThemes", map, vscode.ConfigurationTarget.Global);
@@ -741,19 +948,20 @@ export function activate(context: vscode.ExtensionContext) {
 	// -------------------------------
 	context.subscriptions.push(
 		vscode.commands.registerCommand("smartTheme.listThemes", async () => {
-			const themes = await getAllThemes();
+			const themes = getAllThemes();
 
 			if (themes.length === 0) {
 				vscode.window.showWarningMessage("No themes found from any installed extension");
 				return;
 			}
 
-			const picked = await vscode.window.showQuickPick(themes, {
-				placeHolder: `All detected themes (${themes.length})`,
-			});
+			const picked = await pickWithPreview(
+				themes.map(t => ({ label: t })),
+				`All detected themes (${themes.length})`
+			) as vscode.QuickPickItem | undefined;
 
 			if (picked) {
-				await setThemeDirect(picked);
+				await setThemeDirect(picked.label);
 			}
 		})
 	);
