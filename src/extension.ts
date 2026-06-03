@@ -52,22 +52,64 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	function getAllThemes(): string[] {
-		const themes = new Set<string>();
+	/**
+	 * Builds a map of label → all possible IDs that VS Code might accept
+	 * for that theme. This handles extensions like Doki Theme where the
+	 * internal `id` is a hash/UUID but the `label` is human-readable.
+	 */
+	function buildThemeMap(): Map<string, string[]> {
+		const map = new Map<string, string[]>();
 
 		for (const ext of vscode.extensions.all) {
 			const contributes = ext.packageJSON?.contributes;
 			if (!contributes?.themes) continue;
 
-			const isDoki = ext.id.toLowerCase().includes('doki');
-
 			for (const t of contributes.themes) {
-				if (t.label) themes.add(t.label);
-				if (isDoki && t.id) themes.add(t.id);
+				const label = t.label || '';
+				const id = t.id || '';
+				if (!label) continue;
+
+				// Prioritize id first — VS Code uses the id internally
+				// (critical for extensions like Doki Theme where id is a UUID)
+				const candidates: string[] = [];
+				if (id && id !== label) candidates.push(id);
+				candidates.push(label);
+
+				map.set(label, [...new Set(candidates)]);
 			}
 		}
 
-		return [...themes];
+		return map;
+	}
+
+	/**
+	 * Returns a reverse map: any possible theme identifier → its label.
+	 * This lets us translate a cryptic ID (stored in workbench.colorTheme)
+	 * back to a human-readable name.
+	 */
+	function buildReverseThemeMap(): Map<string, string> {
+		const reverse = new Map<string, string>();
+
+		for (const ext of vscode.extensions.all) {
+			const contributes = ext.packageJSON?.contributes;
+			if (!contributes?.themes) continue;
+
+			for (const t of contributes.themes) {
+				const label = t.label || '';
+				const id = t.id || '';
+				if (!label) continue;
+
+				reverse.set(label, label);
+				if (id) reverse.set(id, label);
+			}
+		}
+
+		return reverse;
+	}
+
+	function getAllThemes(): string[] {
+		const map = buildThemeMap();
+		return [...map.keys()];
 	}
 
 	async function getWorkspaceTheme(): Promise<string | null> {
@@ -150,54 +192,90 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
+	/**
+	 * Resolves a human-readable theme name to all possible identifiers
+	 * that VS Code might accept for it. Returns candidates ordered by
+	 * priority: id first (for extensions like Doki), then label.
+	 */
+	function resolveThemeId(name: string): string[] {
+		const map = buildThemeMap();
+
+		// Direct match by label
+		if (map.has(name)) {
+			return map.get(name)!;
+		}
+
+		// The name might already be an internal ID — look it up in reverse
+		const reverse = buildReverseThemeMap();
+		const label = reverse.get(name);
+		if (label && map.has(label)) {
+			return [name, ...map.get(label)!];
+		}
+
+		// Fallback: return the name as-is
+		return [name];
+	}
+
+	/**
+	 * Given an identifier that might be stored in workbench.colorTheme,
+	 * return the human-readable label (if available).
+	 */
+	function themeIdToLabel(idOrLabel: string): string {
+		const reverse = buildReverseThemeMap();
+		return reverse.get(idOrLabel) || idOrLabel;
+	}
+
 	async function setThemeDirect(name: string, silent = false) {
 		const config = vscode.workspace.getConfiguration();
 		const current = config.get<string>("workbench.colorTheme") || "";
 
 		const candidates = resolveThemeId(name);
-		
+
+		// Check if the theme is already active (comparing against all candidates)
+		if (candidates.includes(current)) {
+			const s = getSettings();
+			if (!silent && (s.get<boolean>("enableNotification") ?? true)) {
+				vscode.window.showInformationMessage(`Theme is already: ${themeIdToLabel(name)}`);
+			}
+			return;
+		}
+
+		// Try each candidate until one sticks.
+		// For Doki themes, the id (a UUID/hash) is what VS Code
+		// actually uses internally, so candidates are ordered id-first.
+		let applied = false;
 		for (const candidate of candidates) {
-			if (candidate === current) {
-				const s = getSettings();
-				if (!silent && (s.get<boolean>("enableNotification") ?? true)) {
-					vscode.window.showInformationMessage(`Theme is already: ${name}`);
+			try {
+				await config.update("workbench.colorTheme", candidate, vscode.ConfigurationTarget.Global);
+
+				// Give VS Code a moment to process the theme change before
+				// reading back the value — without this delay the read may
+				// return the *previous* value, causing valid IDs to be
+				// wrongly discarded (the root cause of the Doki bug).
+				await new Promise(r => setTimeout(r, 150));
+
+				// Re-read configuration to verify the change took effect
+				const newCurrent = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme") || "";
+				if (newCurrent === candidate || candidates.includes(newCurrent)) {
+					applied = true;
+					break;
 				}
-				return;
+			} catch {
+				// This candidate didn't work, try the next one
 			}
 		}
 
-		const target = candidates[0];
-		await config.update("workbench.colorTheme", target, vscode.ConfigurationTarget.Global);
+		// If verification didn't confirm, the first candidate (the id) is
+		// still the best bet — VS Code may have accepted it even if the
+		// read-back didn't match yet.  We leave whatever was last written.
+		if (!applied && candidates.length > 0) {
+			await config.update("workbench.colorTheme", candidates[0], vscode.ConfigurationTarget.Global);
+		}
 
 		const s = getSettings();
 		if (!silent && (s.get<boolean>("enableNotification") ?? true)) {
-			vscode.window.showInformationMessage(`Theme changed to ${name}`);
+			vscode.window.showInformationMessage(`Theme changed to ${themeIdToLabel(name)}`);
 		}
-	}
-
-	function resolveThemeId(name: string): string[] {
-		const candidates: string[] = [name];
-
-		for (const ext of vscode.extensions.all) {
-			const contributes = ext.packageJSON?.contributes;
-			if (!contributes?.themes) continue;
-
-			const isDoki = ext.id.toLowerCase().includes('doki');
-
-			for (const t of contributes.themes) {
-				const label = t.label || '';
-				const id = t.id || '';
-
-				if (label === name || id === name) {
-					candidates.push(label);
-					if (isDoki && id) candidates.push(id);
-					if (isDoki) candidates.push(`${ext.id}.${label.replace(/\s+/g, '-').toLowerCase()}`);
-					if (isDoki && id) candidates.push(`${ext.id}.${id.replace(/\s+/g, '-').toLowerCase()}`);
-				}
-			}
-		}
-
-		return [...new Set(candidates.filter(Boolean))];
 	}
 
 	async function pickWithPreview<T extends vscode.QuickPickItem>(
@@ -637,6 +715,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// -------------------------------
 	// COMMAND: ADD FAVORITES
+	// (Custom QuickPick so Select All / Clear All act as live toggles)
 	// -------------------------------
 	context.subscriptions.push(
 		vscode.commands.registerCommand("smartTheme.addFavorite", async () => {
@@ -649,46 +728,135 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			const items = allThemes.map(t => ({
-				label: t,
-				description: "",
-				picked: currentFavorites.includes(t)
-			}));
+			const SELECT_ALL_LABEL = "$(checklist) Select All Themes";
+			const CLEAR_ALL_LABEL = "$(clear-all) Clear All Favorites";
 
-			items.unshift(
-				{
-					label: "$(checklist) Select All Themes",
-					description: `${allThemes.length} themes available`,
-					picked: false
-				},
-				{
-					label: "$(clear-all) Clear All Favorites",
-					description: `${currentFavorites.length} currently saved`,
-					picked: false
+			const original = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme") || "";
+			let accepted = false;
+			let previewTimer: ReturnType<typeof setTimeout> | undefined;
+			let previewCts: vscode.CancellationTokenSource | undefined;
+			let suppressSelectionEvent = false;
+
+			await new Promise<void>((resolve) => {
+				const qp = vscode.window.createQuickPick<vscode.QuickPickItem>();
+
+				const specialItems: vscode.QuickPickItem[] = [
+					{ label: SELECT_ALL_LABEL, description: `${allThemes.length} themes available` },
+					{ label: CLEAR_ALL_LABEL, description: `${currentFavorites.length} currently saved` },
+				];
+
+				const themeItems: vscode.QuickPickItem[] = allThemes.map(t => ({
+					label: t,
+					description: "",
+					buttons: [{ iconPath: new vscode.ThemeIcon("eye"), tooltip: "Preview (5s)" }],
+				}));
+
+				qp.items = [...specialItems, ...themeItems];
+				qp.placeholder = "Select favorite themes — use Select All / Clear All to toggle";
+				qp.canSelectMany = true;
+				qp.matchOnDescription = true;
+				qp.matchOnDetail = true;
+
+				// Pre-select items that are already favorites
+				suppressSelectionEvent = true;
+				qp.selectedItems = qp.items.filter(
+					item => !item.label.startsWith("$(") && currentFavorites.includes(item.label)
+				);
+				suppressSelectionEvent = false;
+
+				function cancelPreviewTimer() {
+					if (previewTimer) { clearTimeout(previewTimer); previewTimer = undefined; }
+					if (previewCts) { previewCts.cancel(); previewCts.dispose(); previewCts = undefined; }
 				}
-			);
 
-			const selected = await pickWithPreview(items, "Select favorite themes (currently selected will be pre-checked)", { canPickMany: true, alwaysRevert: true }) as vscode.QuickPickItem[] | undefined;
+				// Live preview when hovering a theme
+				qp.onDidChangeActive(async (active) => {
+					if (active.length > 0 && active[0].label && !active[0].label.startsWith("$(")) {
+						cancelPreviewTimer();
+						await setThemeDirect(active[0].label, true);
+					}
+				});
 
-			if (!selected || selected.length === 0) return;
+				// Eye-button timed preview
+				qp.onDidTriggerItemButton(async (e) => {
+					if (e.item.label && !e.item.label.startsWith("$(")) {
+						cancelPreviewTimer();
+						const themeName = e.item.label;
+						await setThemeDirect(themeName, true);
 
-			const hasSelectAll = selected.some(item => item.label === "$(checklist) Select All Themes");
-			if (hasSelectAll) {
-				await s.update("favorites", allThemes, vscode.ConfigurationTarget.Global);
-				vscode.window.showInformationMessage(`All ${allThemes.length} themes added to favorites`);
-				return;
-			}
+						previewCts = new vscode.CancellationTokenSource();
+						const token = previewCts.token;
 
-			const hasClear = selected.some(item => item.label === "$(clear-all) Clear All Favorites");
-			if (hasClear) {
-				await s.update("favorites", [], vscode.ConfigurationTarget.Global);
-				vscode.window.showInformationMessage("All favorites cleared");
-				return;
-			}
+						vscode.window.withProgress(
+							{ location: vscode.ProgressLocation.Notification, title: `Previewing "${themeName}"`, cancellable: true },
+							async (progress, cancelToken) => {
+								const totalSeconds = 5;
+								for (let i = totalSeconds; i > 0; i--) {
+									if (token.isCancellationRequested || cancelToken.isCancellationRequested) return;
+									progress.report({ message: `reverting in ${i}s...`, increment: (1 / totalSeconds) * 100 });
+									await new Promise<void>((r) => { previewTimer = setTimeout(r, 1000); });
+								}
+								if (!token.isCancellationRequested && !cancelToken.isCancellationRequested) {
+									await setThemeDirect(original, true);
+								}
+							}
+						);
+					}
+				});
 
-			const labels = selected.map(item => item.label);
-			await s.update("favorites", labels, vscode.ConfigurationTarget.Global);
-			vscode.window.showInformationMessage(`Favorites updated: ${labels.length} themes`);
+				// Handle Select All / Clear All as in-place toggles
+				qp.onDidChangeSelection((selected) => {
+					if (suppressSelectionEvent) return;
+
+					const selectedLabels = new Set(selected.map(i => i.label));
+					const hasSelectAll = selectedLabels.has(SELECT_ALL_LABEL);
+					const hasClearAll = selectedLabels.has(CLEAR_ALL_LABEL);
+
+					if (hasSelectAll) {
+						// Check every theme item, uncheck the special items
+						suppressSelectionEvent = true;
+						qp.selectedItems = qp.items.filter(i => !i.label.startsWith("$("));
+						suppressSelectionEvent = false;
+						return;
+					}
+
+					if (hasClearAll) {
+						// Uncheck everything
+						suppressSelectionEvent = true;
+						qp.selectedItems = [];
+						suppressSelectionEvent = false;
+						return;
+					}
+				});
+
+				// Confirm selection
+				qp.onDidAccept(async () => {
+					accepted = true;
+					cancelPreviewTimer();
+					await setThemeDirect(original, true);
+
+					const finalSelection = qp.selectedItems
+						.filter(i => !i.label.startsWith("$("))
+						.map(i => i.label);
+
+					await s.update("favorites", finalSelection, vscode.ConfigurationTarget.Global);
+					vscode.window.showInformationMessage(`Favorites updated: ${finalSelection.length} themes`);
+					qp.dispose();
+					resolve();
+				});
+
+				// Cancel / dismiss
+				qp.onDidHide(() => {
+					cancelPreviewTimer();
+					if (!accepted) {
+						setThemeDirect(original, true);
+						resolve();
+					}
+					qp.dispose();
+				});
+
+				qp.show();
+			});
 		})
 	);
 

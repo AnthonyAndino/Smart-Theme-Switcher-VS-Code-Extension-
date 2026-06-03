@@ -217,11 +217,16 @@ Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
 
 ## Known Issues / Problemas Conocidos
 
-- Some theme extensions (like Doki Theme) use internal IDs that may not match their display names. The extension attempts to resolve these automatically, but if a theme doesn't apply, try selecting the version with the alphanumeric ID in the favorites picker.
+- None at this time. If you find any issues, please report them on [GitHub](https://github.com/AnthonyAndino/Smart-Theme-Switcher-VS-Code-Extension-/issues).
 
-- Alguna extensión de temas (como Doki Theme) usa IDs internos que pueden no coincidir con sus nombres visibles. La extensión intenta resolverlos automáticamente, pero si un tema no se aplica, prueba seleccionando la versión con el ID alfanumérico en el selector de favoritos.
+- Ninguno en este momento. Si encuentras algún problema, repórtalo en [GitHub](https://github.com/AnthonyAndino/Smart-Theme-Switcher-VS-Code-Extension-/issues).
 
 ## Release Notes / Notas de Versión
+
+### 0.0.9
+
+- **Fixed Doki Theme compatibility**: themes with UUID/hash-based IDs (like Doki Theme) now apply correctly. The extension prioritizes internal IDs over labels and adds a verification delay to ensure VS Code processes the change / **Compatibilidad con Doki Theme arreglada**: los temas con IDs basados en UUID/hash (como Doki Theme) ahora se aplican correctamente. La extensión prioriza los IDs internos sobre los labels y agrega un delay de verificación para asegurar que VS Code procese el cambio
+- **Improved Select All / Clear All in favorites**: these options now work as live in-place toggles — clicking "Select All" checks every theme and "Clear All" unchecks everything without closing the picker. You can keep adjusting your selection before confirming / **Mejorado Select All / Clear All en favoritos**: ahora funcionan como toggles en tiempo real — hacer clic en "Select All" marca todos los temas y "Clear All" desmarca todo sin cerrar el selector. Puedes seguir ajustando tu selección antes de confirmar
 
 ### 0.0.8
 

@@ -3,7 +3,7 @@
   "displayName": "ThemeLab Switcher",
   "icon": "logo.png",
   "description": "Automatically changes VSCode theme based on time",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "publisher": "AnthonyAndino",
   "repository": {
     "type": "git",
