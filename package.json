@@ -68,10 +68,20 @@
           ],
           "description": "How favorites rotate: manually with command or automatically on interval"
         },
+        "smartTheme.favoritesOrder": {
+          "type": "string",
+          "default": "sequential",
+          "enum": [
+            "sequential",
+            "random"
+          ],
+          "description": "Order of favorites rotation: sequential (cycles through in order) or random"
+        },
         "smartTheme.favoritesIntervalUnit": {
           "type": "string",
           "default": "hours",
           "enum": [
+            "minutes",
             "hours",
             "days",
             "weeks",

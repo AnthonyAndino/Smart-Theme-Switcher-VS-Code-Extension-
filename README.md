@@ -55,8 +55,9 @@ When you run **Set Mode**, you can choose multiple modes:
 2. If you chose **favorites**, you'll be asked:
    - `manual` → change only with the "Change Theme Now" command
    - `auto` → rotate automatically on a time interval
-   - Then pick the unit: hours, days, weeks, or months
-   - And enter the number (e.g. every 2 hours, every 3 days)
+   - Then choose the rotation order: `sequential` (rotate in order) or `random` (random selection)
+   - Then pick the unit: minutes, hours, days, weeks, or months
+   - And enter the number (e.g. every 30 minutes, every 2 hours, every 3 days)
 3. If you chose **time**, you'll pick 3 themes: morning, afternoon, and night. If you haven't set your location yet, you'll be asked to auto-detect it (via IP) or enter your latitude/longitude manually for accurate sunrise/sunset times
 
 ### Settings
@@ -67,6 +68,7 @@ When you run **Set Mode**, you can choose multiple modes:
 | `smartTheme.enabledModes` | array | `["workspace"]` | Active modes: workspace, favorites, time, language |
 | `smartTheme.favorites` | array | `["Default Dark+", "Default Light+", "Abyss"]` | List of favorite themes |
 | `smartTheme.favoritesRotation` | string | `"manual"` | Manual or automatic rotation |
+| `smartTheme.favoritesOrder` | string | `"sequential"` | Rotation order: sequential or random |
 | `smartTheme.favoritesIntervalUnit` | string | `"hours"` | Time unit for auto-rotation |
 | `smartTheme.favoritesIntervalValue` | number | `1` | How many units between changes |
 | `smartTheme.workspaceThemes` | object | `{}` | Map of projects to themes |
@@ -168,8 +170,9 @@ Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
 2. Si elegiste **favorites**, te preguntará:
    - `manual` → cambia solo con el comando "Change Theme Now"
    - `auto` → rota automáticamente cada cierto tiempo
-   - Luego eliges la unidad: horas, días, semanas o meses
-   - Y escribes el número (ej: cada 2 horas, cada 3 días)
+   - Luego eliges el orden de rotación: `sequential` (en orden secuencial) o `random` (selección aleatoria)
+   - Luego eliges la unidad: minutos, horas, días, semanas o meses
+   - Y escribes el número (ej: cada 30 minutos, cada 2 horas, cada 3 días)
 3. Si elegiste **time**, te pedirá que elijas 3 temas: mañana, tarde y noche. Si no has configurado tu ubicación, te preguntará si quieres detectarla automáticamente (por IP) o ingresar tu latitud/longitud manualmente para obtener horas exactas de amanecer/atardecer
 
 ### Configuración (Settings)
@@ -180,6 +183,7 @@ Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
 | `smartTheme.enabledModes` | array | `["workspace"]` | Modos activos: workspace, favorites, time, language |
 | `smartTheme.favorites` | array | `["Default Dark+", "Default Light+", "Abyss"]` | Lista de temas favoritos |
 | `smartTheme.favoritesRotation` | string | `"manual"` | Rotación manual o automática |
+| `smartTheme.favoritesOrder` | string | `"sequential"` | Orden de rotación: sequential o random |
 | `smartTheme.favoritesIntervalUnit` | string | `"hours"` | Unidad de tiempo para auto-rotación |
 | `smartTheme.favoritesIntervalValue` | number | `1` | Cada cuántas unidades cambia |
 | `smartTheme.workspaceThemes` | object | `{}` | Mapa de proyectos a temas |
@@ -225,6 +229,8 @@ Cuando ejecutas **Set Mode**, puedes elegir múltiples modos:
 
 ### 0.0.9
 
+- **Added random favorites order**: favorite themes can now rotate randomly (both with manual and auto-rotation) instead of only sequentially / **Rotación aleatoria de favoritos**: los temas favoritos ahora pueden rotar de forma aleatoria (tanto en rotación manual como automática) en lugar de solo secuencialmente
+- **Added minutes interval unit**: you can now set the rotation interval in minutes / **Intervalo en minutos**: ahora puedes configurar el intervalo de rotación en minutos
 - **Fixed Doki Theme compatibility**: themes with UUID/hash-based IDs (like Doki Theme) now apply correctly. The extension prioritizes internal IDs over labels and adds a verification delay to ensure VS Code processes the change / **Compatibilidad con Doki Theme arreglada**: los temas con IDs basados en UUID/hash (como Doki Theme) ahora se aplican correctamente. La extensión prioriza los IDs internos sobre los labels y agrega un delay de verificación para asegurar que VS Code procese el cambio
 - **Improved Select All / Clear All in favorites**: these options now work as live in-place toggles — clicking "Select All" checks every theme and "Clear All" unchecks everything without closing the picker. You can keep adjusting your selection before confirming / **Mejorado Select All / Clear All en favoritos**: ahora funcionan como toggles en tiempo real — hacer clic en "Select All" marca todos los temas y "Clear All" desmarca todo sin cerrar el selector. Puedes seguir ajustando tu selección antes de confirmar
 

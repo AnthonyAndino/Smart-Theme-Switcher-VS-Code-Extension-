@@ -33,12 +33,30 @@ export function activate(context: vscode.ExtensionContext) {
 		const value = s.get<number>("favoritesIntervalValue") || 1;
 
 		switch (unit) {
+			case "minutes":
+			case "min": return value * 60 * 1000;
 			case "hours": return value * 60 * 60 * 1000;
 			case "days": return value * 24 * 60 * 60 * 1000;
 			case "weeks": return value * 7 * 24 * 60 * 60 * 1000;
 			case "months": return value * 30 * 24 * 60 * 60 * 1000;
 			default: return value * 60 * 60 * 1000;
 		}
+	}
+
+	function getNextFavoriteIndex(currentIdx: number, total: number): number {
+		if (total <= 1) return 0;
+		const s = getSettings();
+		const order = s.get<string>("favoritesOrder") || "sequential";
+
+		if (order === "random") {
+			let newIdx = currentIdx;
+			// Avoid picking the same theme twice in a row if there are multiple options
+			while (newIdx === currentIdx) {
+				newIdx = Math.floor(Math.random() * total);
+			}
+			return newIdx;
+		}
+		return (currentIdx + 1) % total;
 	}
 
 	function restartAutoInterval() {
@@ -406,7 +424,7 @@ export function activate(context: vscode.ExtensionContext) {
 				if (rotation === "auto") {
 					const lastChange = context.globalState.get<number>("favoriteLastChange") || 0;
 					if (Date.now() - lastChange >= getIntervalMs()) {
-						favoriteIndex = (favoriteIndex + 1) % favorites.length;
+						favoriteIndex = getNextFavoriteIndex(favoriteIndex, favorites.length);
 						context.globalState.update("favoriteIndex", favoriteIndex);
 						context.globalState.update("favoriteLastChange", Date.now());
 						await setThemeDirect(favorites[favoriteIndex]);
@@ -457,6 +475,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.workspace.onDidChangeConfiguration((e) => {
 			if (e.affectsConfiguration("smartTheme.enabledModes") ||
 				e.affectsConfiguration("smartTheme.favoritesRotation") ||
+				e.affectsConfiguration("smartTheme.favoritesOrder") ||
 				e.affectsConfiguration("smartTheme.favoritesIntervalUnit") ||
 				e.affectsConfiguration("smartTheme.favoritesIntervalValue")) {
 				restartAutoInterval();
@@ -495,7 +514,7 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.window.showWarningMessage("No favorites configured. Use Add Favorite first.");
 					return;
 				}
-				favoriteIndex = (favoriteIndex + 1) % favorites.length;
+				favoriteIndex = getNextFavoriteIndex(favoriteIndex, favorites.length);
 				context.globalState.update("favoriteIndex", favoriteIndex);
 				context.globalState.update("favoriteLastChange", Date.now());
 				await setThemeDirect(favorites[favoriteIndex]);
@@ -585,9 +604,22 @@ export function activate(context: vscode.ExtensionContext) {
 				if (rotationPick) {
 					await s.update("favoritesRotation", rotationPick.label, vscode.ConfigurationTarget.Global);
 
+					const orderPick = await vscode.window.showQuickPick(
+						[
+							{ label: "sequential", description: "Rotate in order", detail: "Cycles through favorites sequentially" },
+							{ label: "random", description: "Random selection", detail: "Chooses a random favorite theme" },
+						],
+						{ placeHolder: "Choose rotation order" }
+					);
+
+					if (orderPick) {
+						await s.update("favoritesOrder", orderPick.label, vscode.ConfigurationTarget.Global);
+					}
+
 					if (rotationPick.label === "auto") {
 						const unitPick = await vscode.window.showQuickPick(
 							[
+								{ label: "minutes", description: "Every N minutes" },
 								{ label: "hours", description: "Every N hours" },
 								{ label: "days", description: "Every N days" },
 								{ label: "weeks", description: "Every N weeks" },
