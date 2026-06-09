@@ -4,6 +4,12 @@ All notable changes to the "smart-theme-switcher" extension will be documented i
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.10] - 2026-06-08
+
+- Registered `favoritesOrder` configuration (`sequential` or `random`)
+- Registered `minutes` interval unit in `favoritesIntervalUnit`
+- Bumped version to `0.0.10` to resolve registration errors in VS Code
+
 ## [0.0.9] - 2026-06-02
 
 - Fixed Doki Theme compatibility: themes with UUID/hash-based IDs now apply correctly
