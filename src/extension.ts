@@ -132,7 +132,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	async function getWorkspaceTheme(): Promise<string | null> {
 		const s = getSettings();
-		const map = s.get<Record<string, string>>("workspaceThemes") || {};
+		const map = { ...s.get<Record<string, string>>("workspaceThemes") };
 		const folderName = vscode.workspace.workspaceFolders?.[0]?.name;
 
 		if (!folderName) return null;
@@ -258,13 +258,23 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
+		const inspect = config.inspect<string>("workbench.colorTheme");
+		let target = vscode.ConfigurationTarget.Global;
+		if (inspect) {
+			if (inspect.workspaceFolderValue !== undefined) {
+				target = vscode.ConfigurationTarget.WorkspaceFolder;
+			} else if (inspect.workspaceValue !== undefined) {
+				target = vscode.ConfigurationTarget.Workspace;
+			}
+		}
+
 		// Try each candidate until one sticks.
 		// For Doki themes, the id (a UUID/hash) is what VS Code
 		// actually uses internally, so candidates are ordered id-first.
 		let applied = false;
 		for (const candidate of candidates) {
 			try {
-				await config.update("workbench.colorTheme", candidate, vscode.ConfigurationTarget.Global);
+				await config.update("workbench.colorTheme", candidate, target);
 
 				// Give VS Code a moment to process the theme change before
 				// reading back the value — without this delay the read may
@@ -287,7 +297,7 @@ export function activate(context: vscode.ExtensionContext) {
 		// still the best bet — VS Code may have accepted it even if the
 		// read-back didn't match yet.  We leave whatever was last written.
 		if (!applied && candidates.length > 0) {
-			await config.update("workbench.colorTheme", candidates[0], vscode.ConfigurationTarget.Global);
+			await config.update("workbench.colorTheme", candidates[0], target);
 		}
 
 		const s = getSettings();
@@ -914,7 +924,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 			if (!selected) return;
 
-			const map = s.get<Record<string, string>>("workspaceThemes") || {};
+			const map = { ...s.get<Record<string, string>>("workspaceThemes") };
 			map[folderName] = selected.label;
 			await s.update("workspaceThemes", map, vscode.ConfigurationTarget.Global);
 			await setThemeDirect(selected.label);
@@ -927,7 +937,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("smartTheme.manageWorkspaceThemes", async () => {
 			const s = getSettings();
-			const map = s.get<Record<string, string>>("workspaceThemes") || {};
+			const map = { ...s.get<Record<string, string>>("workspaceThemes") };
 			const entries = Object.entries(map);
 			const allThemes = getAllThemes();
 
@@ -1022,7 +1032,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("smartTheme.setLanguageTheme", async () => {
 			const s = getSettings();
-			const map = s.get<Record<string, string>>("languageThemes") || {};
+			const map = { ...s.get<Record<string, string>>("languageThemes") };
 
 			const editor = vscode.window.activeTextEditor;
 			const currentLang = editor?.document.languageId;
@@ -1062,7 +1072,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("smartTheme.manageLanguageThemes", async () => {
 			const s = getSettings();
-			const map = s.get<Record<string, string>>("languageThemes") || {};
+			const map = { ...s.get<Record<string, string>>("languageThemes") };
 			const entries = Object.entries(map);
 
 			const items: { label: string; description: string; detail: string; lang: string | null }[] = entries.map(([lang, theme]) => ({
