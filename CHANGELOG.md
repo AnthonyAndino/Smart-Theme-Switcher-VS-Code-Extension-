@@ -4,11 +4,15 @@ All notable changes to the "smart-theme-switcher" extension will be documented i
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [0.0.10] - 2026-06-08
+## [0.0.10] - 2026-06-25
 
 - Registered `favoritesOrder` configuration (`sequential` or `random`)
 - Registered `minutes` interval unit in `favoritesIntervalUnit`
 - Bumped version to `0.0.10` to resolve registration errors in VS Code
+- Fixed configuration mutation errors (`TypeError: Cannot assign to read only property`) in Workspace and Language Theme settings by copying state maps before mutation.
+- Corregido el error de mutación de configuración (`TypeError: Cannot assign to read only property`) en la configuración de temas por espacio de trabajo e idioma al copiar los mapas de estado antes de su mutación.
+- Fixed theme switching being ignored by checking and updating active local settings targets (`Workspace` or `WorkspaceFolder`) instead of only updating `Global` settings.
+- Corregido el problema de omisión en el cambio de tema al verificar y actualizar el objetivo de configuración local activo (`Workspace` o `WorkspaceFolder`) en lugar de actualizar únicamente la configuración global.
 
 ## [0.0.9] - 2026-06-02
 
